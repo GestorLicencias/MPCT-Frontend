@@ -28,7 +28,7 @@ export default function LoginPage() {
       const { token, email: userEmail, role } = response.data;
       
       // Construir el objeto user esperado por el AuthContext
-      const user = { email: userEmail, role };
+      const user = { id: "", email: userEmail, role };
       login(token, user);
       
       if (role === "ADMIN") {
