@@ -9,6 +9,7 @@ import api from "@/lib/api";
 
 interface TramiteResponse {
   id: string;
+  ruc: string;
   tipo: string;
   estado: string;
   montoCobrado: number;
@@ -43,37 +44,27 @@ export default function SolicitanteDashboardPage() {
   const processedPaymentRef = useRef(false);
 
   const handleMercadoPagoReturn = async () => {
-    // Mercado Pago agrega su propio parámetro 'status=approved', que puede sobreescribir nuestro 'status=success'
     const status = searchParams.get("status");
-    const collectionStatus = searchParams.get("collection_status");
-    const paymentId = searchParams.get("payment_id") || searchParams.get("collection_id");
-    const tramiteId = searchParams.get("tramiteId") || searchParams.get("external_reference");
-
-    const isSuccess = status === "success" || status === "approved" || collectionStatus === "approved";
-
-    if (isSuccess && paymentId && tramiteId && !processedPaymentRef.current) {
-      processedPaymentRef.current = true; // Prevenir doble ejecución en React Strict Mode
-      try {
-        await api.post(`/tramites/${tramiteId}/pagar`, null, {
-          params: { transactionId: paymentId }
-        });
-        alert("¡Pago procesado con éxito! Tu trámite pasará a evaluación.");
+    
+    if (!processedPaymentRef.current) {
+      if (status === "success" || status === "approved") {
+        processedPaymentRef.current = true;
+        alert("¡Pago procesado con MercadoPago! El sistema está verificando la confirmación.");
         router.replace("/dashboard/solicitante");
-      } catch (error: any) {
-        console.error("Error confirmando pago", error);
-        alert("Error al confirmar el pago en el sistema: " + (error.response?.data?.message || error.message));
-        // Si falló, permitimos reintentar si recargan
-        processedPaymentRef.current = false;
+      } else if (status === "failure" || status === "rejected") {
+        processedPaymentRef.current = true;
+        alert("El pago no se pudo completar. Intente nuevamente.");
+        router.replace("/dashboard/solicitante");
       }
     }
   };
 
-  const handlePagar = async (tramiteId: string) => {
+  const handlePagar = async (tramiteId: string, ruc: string) => {
     try {
       setPayingId(tramiteId);
-      const res = await api.post(`/tramites/${tramiteId}/preferencia`);
-      if (res.data && res.data.url) {
-        window.location.href = res.data.url;
+      const res = await api.post(`/tramites/${ruc}/mercadopago`);
+      if (res.data && res.data.initPoint) {
+        window.location.href = res.data.initPoint;
       }
     } catch (error: any) {
       console.error("Error al generar preferencia", error);
@@ -83,9 +74,9 @@ export default function SolicitanteDashboardPage() {
     }
   };
 
-  const handleDescargarLicencia = async (tramiteId: string) => {
+  const handleDescargarLicencia = async (ruc: string) => {
     try {
-      const response = await api.get(`/tramites/${tramiteId}/licencia/pdf`, {
+      const response = await api.get(`/tramites/${ruc}/certificado`, {
         responseType: 'blob'
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -191,7 +182,7 @@ export default function SolicitanteDashboardPage() {
                   
                   {tramite.estado === "PENDIENTE" ? (
                     <button 
-                      onClick={() => handlePagar(tramite.id)}
+                      onClick={() => handlePagar(tramite.id, tramite.ruc)}
                       disabled={payingId === tramite.id}
                       className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -200,7 +191,7 @@ export default function SolicitanteDashboardPage() {
                     </button>
                   ) : tramite.estado === "APROBADO" ? (
                     <button 
-                      onClick={() => handleDescargarLicencia(tramite.id)}
+                      onClick={() => handleDescargarLicencia(tramite.ruc)}
                       className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-lg shadow-emerald-500/20 transition-all"
                     >
                       <FileText className="w-4 h-4" />
