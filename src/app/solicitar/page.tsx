@@ -22,10 +22,22 @@ const formSchema = z.object({
   dni: z.string().length(8, { message: "El DNI debe tener 8 dígitos exactos." }),
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
   rubro: z.string().min(2, { message: "Seleccione el rubro." }),
-  area: z.string().min(1, { message: "Ingrese el área." }).max(7, { message: "El área es demasiado grande." }),
-  tipo: z.enum(["NUEVO", "RENOVACION"]),
-  plano: z.any().refine((file) => file?.length === 1, "Debe adjuntar el plano en formato PDF o Imagen."),
-  foto: z.any().refine((files) => files?.length >= 1 && files?.length <= 4, "Debe adjuntar entre 1 y 4 fotografías.")
+  area: z.string().optional(),
+  tipo: z.enum(["NUEVO", "RENOVACION", "MODIFICACION", "TRASLADO"]),
+  plano: z.any().optional(),
+  foto: z.any().optional()
+}).superRefine((data, ctx) => {
+  if (data.tipo !== "RENOVACION") {
+    if (!data.area || data.area.length < 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ingrese el área.", path: ["area"] });
+    }
+    if (!data.plano || data.plano.length !== 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar el plano en formato PDF o Imagen.", path: ["plano"] });
+    }
+    if (!data.foto || data.foto.length < 1 || data.foto.length > 4) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar entre 1 y 4 fotografías.", path: ["foto"] });
+    }
+  }
 });
 
 export default function SolicitarPage() {
@@ -45,6 +57,7 @@ export default function SolicitarPage() {
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const isRenovacion = values.tipo === "RENOVACION";
     setIsSubmitting(true);
     try {
       const formData = new FormData();
@@ -52,11 +65,17 @@ export default function SolicitarPage() {
       formData.append("dni", values.dni);
       formData.append("representanteLegal", values.representanteLegal);
       formData.append("rubro", values.rubro);
-      formData.append("area", values.area);
+      formData.append("area", values.area || "0");
       formData.append("tipo", values.tipo);
-      formData.append("plano", values.plano[0]);
-      for (let i = 0; i < values.foto.length; i++) {
-        formData.append("fotos", values.foto[i]);
+      if (!isRenovacion) {
+        formData.append("plano", values.plano[0]);
+        for (let i = 0; i < values.foto.length; i++) {
+          formData.append("fotos", values.foto[i]);
+        }
+      } else {
+        // Send a dummy file to avoid multipart errors if backend expects a file part, 
+        // though our updated backend will ignore it. Just to be safe we don't append it, 
+        // we will fix backend to handle nulls.
       }
 
       const response = await axios.post(API_URL, formData, {
@@ -127,6 +146,8 @@ export default function SolicitarPage() {
                         >
                           <option value="NUEVO" className="bg-slate-900">Nueva Licencia</option>
                           <option value="RENOVACION" className="bg-slate-900">Renovación</option>
+                          <option value="MODIFICACION" className="bg-slate-900">Modificación / Ampliación de Área</option>
+                          <option value="TRASLADO" className="bg-slate-900">Traslado de Local</option>
                         </select>
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -211,7 +232,13 @@ export default function SolicitarPage() {
                           maxLength={7}
                           {...field} 
                           onChange={(e) => field.onChange(e.target.value.replace(/[^0-9.]/g, ''))}
-                          className="h-12 bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600"
+                          disabled={form.watch("tipo") === "RENOVACION"}
+                          onClick={() => {
+                            if (form.watch("tipo") === "RENOVACION") {
+                              toast.error("Para cambiar el área o los planos, debe solicitar una Modificación o Traslado.");
+                            }
+                          }}
+                          className={`h-12 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600 ${form.watch("tipo") === "RENOVACION" ? "bg-slate-800/50 cursor-not-allowed text-slate-500" : "bg-slate-950/50"}`}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -236,8 +263,14 @@ export default function SolicitarPage() {
                           type="file" 
                           accept="application/pdf, image/*"
                           onChange={(e) => onChange(e.target.files)}
-                          {...field}
-                          className="bg-slate-950/50 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer"
+                          disabled={form.watch("tipo") === "RENOVACION"}
+                          onClick={(e) => {
+                            if (form.watch("tipo") === "RENOVACION") {
+                              e.preventDefault();
+                              toast.error("Para cambiar el área o los planos, debe solicitar una Modificación o Traslado.");
+                            }
+                          }}
+                          className={`border-slate-700 text-slate-300 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 ${form.watch("tipo") === "RENOVACION" ? "bg-slate-800/50 cursor-not-allowed opacity-50" : "bg-slate-950/50 file:bg-slate-800 hover:file:bg-slate-700 cursor-pointer"}`}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -257,8 +290,14 @@ export default function SolicitarPage() {
                           accept="image/*"
                           multiple
                           onChange={(e) => onChange(e.target.files)}
-                          {...field}
-                          className="bg-slate-950/50 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer"
+                          disabled={form.watch("tipo") === "RENOVACION"}
+                          onClick={(e) => {
+                            if (form.watch("tipo") === "RENOVACION") {
+                              e.preventDefault();
+                              toast.error("Para cambiar el área o los planos, debe solicitar una Modificación o Traslado.");
+                            }
+                          }}
+                          className={`border-slate-700 text-slate-300 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 ${form.watch("tipo") === "RENOVACION" ? "bg-slate-800/50 cursor-not-allowed opacity-50" : "bg-slate-950/50 file:bg-slate-800 hover:file:bg-slate-700 cursor-pointer"}`}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
