@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CheckCircle2, CheckCircle, Clock, AlertCircle, FileX, CreditCard, UploadCloud, Download, Loader2 } from "lucide-react";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1'}/tramites`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1'}/tramites`;
 
 interface Tramite {
   id: string;
@@ -311,7 +311,7 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
             <Button 
               className="w-full md:w-auto h-14 px-8 text-lg bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all"
               onClick={() => {
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1';
                 window.open(`${baseUrl}/tramites/${tramite.ruc}/certificado`, "_blank");
               }}
             >
