@@ -22,7 +22,7 @@ const formSchema = z.object({
   dni: z.string().length(8, { message: "El DNI debe tener 8 dígitos exactos." }),
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
   area: z.string().min(1, { message: "Ingrese el área." }).max(7, { message: "El área es demasiado grande." }),
-  tipo: z.enum(["NUEVO", "RENOVACION"], { required_error: "Seleccione un tipo." }),
+  tipo: z.enum(["NUEVO", "RENOVACION"]),
   plano: z.any().refine((file) => file?.length === 1, "Debe adjuntar el plano en formato PDF o Imagen."),
   foto: z.any().refine((files) => files?.length >= 1 && files?.length <= 4, "Debe adjuntar entre 1 y 4 fotografías.")
 });
