@@ -10,30 +10,21 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await axios.get(`https://api.apis.net.pe/v1/dni?numero=${dni}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Referer': 'https://apis.net.pe/'
-      }
-    });
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1';
+    const response = await axios.get(`${backendUrl}/tramites/dni/${dni}`);
     
-    if (response.data && response.data.nombre) {
+    if (response.data && response.data.nombreCompleto) {
         return NextResponse.json({
-            nombreCompleto: response.data.nombre
+            nombreCompleto: response.data.nombreCompleto
         });
     }
     
     return NextResponse.json({ message: 'No se encontraron datos para este DNI' }, { status: 404 });
 
   } catch (error: any) {
-    console.error("Error fetching DNI from apis.net.pe:", error.message);
-    if (error.response) {
-       console.error("Data:", error.response.data);
-       console.error("Status:", error.response.status);
-    }
+    console.error("Error fetching DNI from backend:", error.message);
     return NextResponse.json(
-      { message: 'Error al consultar el servicio externo' },
+      { message: 'Error al consultar el DNI en el backend' },
       { status: 500 }
     );
   }
