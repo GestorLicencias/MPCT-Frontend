@@ -146,8 +146,7 @@ export default function SolicitarPage() {
                         >
                           <option value="NUEVO" className="bg-slate-900">Nueva Licencia</option>
                           <option value="RENOVACION" className="bg-slate-900">Renovación</option>
-                          <option value="MODIFICACION" className="bg-slate-900">Modificación / Ampliación de Área</option>
-                          <option value="TRASLADO" className="bg-slate-900">Traslado de Local</option>
+                          <option value="MODIFICACION" className="bg-slate-900">Modificación de Solicitud</option>
                         </select>
                       </FormControl>
                       <FormMessage className="text-red-400" />
@@ -235,7 +234,7 @@ export default function SolicitarPage() {
                           disabled={form.watch("tipo") === "RENOVACION"}
                           onClick={() => {
                             if (form.watch("tipo") === "RENOVACION") {
-                              toast.error("Para cambiar el área o los planos, debe solicitar una Modificación o Traslado.");
+                              toast.error("Para cambiar el área o los planos, debe solicitar una Modificación.");
                             }
                           }}
                           className={`h-12 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600 ${form.watch("tipo") === "RENOVACION" ? "bg-slate-800/50 cursor-not-allowed text-slate-500" : "bg-slate-950/50"}`}
