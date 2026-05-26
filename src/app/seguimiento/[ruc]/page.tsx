@@ -199,6 +199,13 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
           </CardHeader>
           <CardContent className="pt-6 grid md:grid-cols-2 gap-8">
             
+            {tramite.pagoRechazado && (
+              <div className="md:col-span-2 bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg flex items-center gap-3">
+                <AlertCircle className="text-red-500 h-6 w-6 shrink-0" />
+                <p className="text-red-400 font-medium">Su pago por voucher anterior fue rechazado. Verifique su comprobante o comuníquese con su banco antes de volver a enviarlo.</p>
+              </div>
+            )}
+
             <div className="space-y-4 border border-slate-800 rounded-xl p-4 bg-slate-950/50 hover:border-cyan-800/50 transition-colors">
               <div className="bg-emerald-500/10 border border-emerald-500/50 p-3 rounded-lg flex gap-3 items-start">
                 <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
