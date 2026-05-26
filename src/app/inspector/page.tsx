@@ -201,7 +201,7 @@ export default function InspectorPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => {
                     const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://mpct-api-264213836001.us-east1.run.app/api/v1";
-                    window.open(`${baseUrl}/tramites/${selected.tramite.ruc}/archivos/plano`, "_blank");
+                    window.open(`${baseUrl}/tramites/${selected.tramite.ruc}/archivos/plano?download=true`, "_blank");
                   }}>
                     <FileText className="mr-2 h-4 w-4 text-cyan-500" /> Plano
                   </Button>
