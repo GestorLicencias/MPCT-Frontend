@@ -9,16 +9,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'DNI inválido' }, { status: 400 });
   }
 
-    try {
-        const response = await axios.get(`https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/dni/${dni}`);
-        
-        if (response.data && response.data.nombreCompleto) {
-            return NextResponse.json({
-                nombreCompleto: response.data.nombreCompleto
-            });
-        }
-        
-        return NextResponse.json({ message: 'No se encontraron datos para este DNI' }, { status: 404 });
+  try {
+    const response = await axios.get(`https://api.apis.net.pe/v1/dni?numero=${dni}`);
+    
+    if (response.data && response.data.nombre) {
+        return NextResponse.json({
+            nombreCompleto: response.data.nombre
+        });
+    }
+    
+    return NextResponse.json({ message: 'No se encontraron datos para este DNI' }, { status: 404 });
 
   } catch (error: any) {
     console.error("Error fetching DNI from apis.net.pe:", error.message);
