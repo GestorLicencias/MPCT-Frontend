@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const API_URL = "http://localhost:8080/api/v1/auth";
+const API_URL = "https://mpct-api-264213836001.us-east1.run.app/api/v1/auth";
 
 export default function LoginPage() {
   const router = useRouter();

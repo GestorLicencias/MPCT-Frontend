@@ -78,10 +78,10 @@ export default function InspectorPage() {
   const getAvailableImages = () => {
     if (!selected || !selected.tramite) return [];
     const images = [];
-    if (selected.tramite.archivoFotoUrl) images.push({ url: `http://localhost:8080/api/v1/tramites/${selected.tramite.ruc}/archivos/foto`, title: "Foto 1" });
-    if (selected.tramite.archivoFoto2Url) images.push({ url: `http://localhost:8080/api/v1/tramites/${selected.tramite.ruc}/archivos/foto2`, title: "Foto 2" });
-    if (selected.tramite.archivoFoto3Url) images.push({ url: `http://localhost:8080/api/v1/tramites/${selected.tramite.ruc}/archivos/foto3`, title: "Foto 3" });
-    if (selected.tramite.archivoFoto4Url) images.push({ url: `http://localhost:8080/api/v1/tramites/${selected.tramite.ruc}/archivos/foto4`, title: "Foto 4" });
+    if (selected.tramite.archivoFotoUrl) images.push({ url: `https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/${selected.tramite.ruc}/archivos/foto`, title: "Foto 1" });
+    if (selected.tramite.archivoFoto2Url) images.push({ url: `https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/${selected.tramite.ruc}/archivos/foto2`, title: "Foto 2" });
+    if (selected.tramite.archivoFoto3Url) images.push({ url: `https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/${selected.tramite.ruc}/archivos/foto3`, title: "Foto 3" });
+    if (selected.tramite.archivoFoto4Url) images.push({ url: `https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/${selected.tramite.ruc}/archivos/foto4`, title: "Foto 4" });
     return images;
   };
 
@@ -198,7 +198,7 @@ export default function InspectorPage() {
               <div className="pt-4 border-t border-slate-800 space-y-4 md:col-span-2">
                 <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Documentos Técnicos</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => window.open(`http://localhost:8080/api/v1/tramites/${selected.tramite.ruc}/archivos/plano`, "_blank")}>
+                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => window.open(`https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/${selected.tramite.ruc}/archivos/plano`, "_blank")}>
                     <FileText className="mr-2 h-4 w-4 text-cyan-500" /> Plano
                   </Button>
                   <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => openLightbox(0)}>

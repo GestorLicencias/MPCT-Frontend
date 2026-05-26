@@ -55,7 +55,7 @@ export default function NuevoTramitePage() {
       formData.append("foto", foto);
       
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:8080/api/v1/tramites", formData, {
+      await axios.post("https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites", formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }

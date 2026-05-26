@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
 
     try {
-        const response = await axios.get(`http://localhost:8080/api/v1/tramites/dni/${dni}`);
+        const response = await axios.get(`https://mpct-api-264213836001.us-east1.run.app/api/v1/tramites/dni/${dni}`);
         
         if (response.data && response.data.nombreCompleto) {
             return NextResponse.json({
