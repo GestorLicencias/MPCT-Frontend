@@ -202,10 +202,16 @@ export default function InspectorPage() {
                   <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={async () => {
                     try {
                       const res = await api.get(`/tramites/${selected.tramite.ruc}/archivos/plano`, { responseType: 'blob' });
-                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const contentType = res.headers['content-type'] || '';
+                      let ext = 'pdf';
+                      if (contentType.includes('image/jpeg')) ext = 'jpg';
+                      else if (contentType.includes('image/png')) ext = 'png';
+                      else if (contentType.includes('image/')) ext = contentType.split('/')[1];
+                      
+                      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
                       const link = document.createElement('a');
                       link.href = url;
-                      link.setAttribute('download', `Plano_${selected.tramite.ruc}.pdf`);
+                      link.setAttribute('download', `Plano_${selected.tramite.ruc}.${ext}`);
                       document.body.appendChild(link);
                       link.click();
                       link.parentNode?.removeChild(link);
@@ -449,10 +455,16 @@ function RevisionTramitesSection() {
                   <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={async () => {
                     try {
                       const res = await api.get(`/tramites/${selected.ruc}/archivos/plano`, { responseType: 'blob' });
-                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const contentType = res.headers['content-type'] || '';
+                      let ext = 'pdf';
+                      if (contentType.includes('image/jpeg')) ext = 'jpg';
+                      else if (contentType.includes('image/png')) ext = 'png';
+                      else if (contentType.includes('image/')) ext = contentType.split('/')[1];
+                      
+                      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
                       const link = document.createElement('a');
                       link.href = url;
-                      link.setAttribute('download', `Plano_${selected.ruc}.pdf`);
+                      link.setAttribute('download', `Plano_${selected.ruc}.${ext}`);
                       document.body.appendChild(link);
                       link.click();
                       link.parentNode?.removeChild(link);
