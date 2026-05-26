@@ -199,9 +199,19 @@ export default function InspectorPage() {
               <div className="pt-4 border-t border-slate-800 space-y-4 md:col-span-2">
                 <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Documentos Técnicos</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => {
-                    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://mpct-api-264213836001.us-east1.run.app/api/v1";
-                    window.open(`${baseUrl}/tramites/${selected.tramite.ruc}/archivos/plano?download=true`, "_blank");
+                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={async () => {
+                    try {
+                      const res = await api.get(`/tramites/${selected.tramite.ruc}/archivos/plano`, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', `Plano_${selected.tramite.ruc}.pdf`);
+                      document.body.appendChild(link);
+                      link.click();
+                      link.parentNode?.removeChild(link);
+                    } catch (e) {
+                      toast.error("Error al descargar el plano.");
+                    }
                   }}>
                     <FileText className="mr-2 h-4 w-4 text-cyan-500" /> Plano
                   </Button>
@@ -436,9 +446,19 @@ function RevisionTramitesSection() {
               <div className="pt-4 border-t border-slate-800">
                 <h4 className="text-xs font-semibold text-slate-300 uppercase mb-3">Documentos</h4>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => {
-                    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://mpct-api-264213836001.us-east1.run.app/api/v1";
-                    window.open(`${baseUrl}/tramites/${selected.ruc}/archivos/plano?download=true`, "_blank");
+                  <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={async () => {
+                    try {
+                      const res = await api.get(`/tramites/${selected.ruc}/archivos/plano`, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([res.data]));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', `Plano_${selected.ruc}.pdf`);
+                      document.body.appendChild(link);
+                      link.click();
+                      link.parentNode?.removeChild(link);
+                    } catch (e) {
+                      toast.error("Error al descargar el plano.");
+                    }
                   }}>
                     Descargar Plano PDF
                   </Button>
