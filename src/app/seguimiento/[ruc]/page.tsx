@@ -310,9 +310,21 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
           <CardContent className="pt-6">
             <Button 
               className="w-full md:w-auto h-14 px-8 text-lg bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all"
-              onClick={() => {
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1';
-                window.open(`${baseUrl}/tramites/${tramite.ruc}/certificado`, "_blank");
+              onClick={async () => {
+                try {
+                  const res = await axios.get(`${API_URL}/${tramite.ruc}/certificado`, {
+                    responseType: 'blob'
+                  });
+                  const url = window.URL.createObjectURL(new Blob([res.data]));
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', `Licencia_${tramite.ruc}.pdf`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.parentNode?.removeChild(link);
+                } catch (e) {
+                  toast.error("Error al descargar el certificado. Intente de nuevo.");
+                }
               }}
             >
               <Download className="mr-2" /> Descargar Certificado
