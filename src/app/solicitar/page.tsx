@@ -21,6 +21,7 @@ const formSchema = z.object({
   ruc: z.string().length(11, { message: "El RUC debe tener 11 dígitos exactos." }),
   dni: z.string().length(8, { message: "El DNI debe tener 8 dígitos exactos." }),
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
+  rubro: z.string().min(2, { message: "Seleccione el rubro." }),
   area: z.string().min(1, { message: "Ingrese el área." }).max(7, { message: "El área es demasiado grande." }),
   tipo: z.enum(["NUEVO", "RENOVACION"]),
   plano: z.any().refine((file) => file?.length === 1, "Debe adjuntar el plano en formato PDF o Imagen."),
@@ -30,7 +31,6 @@ const formSchema = z.object({
 export default function SolicitarPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSearchingDNI, setIsSearchingDNI] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,30 +38,11 @@ export default function SolicitarPage() {
       ruc: "",
       dni: "",
       representanteLegal: "",
+      rubro: "",
       area: "",
       tipo: "NUEVO",
     },
   });
-
-  const buscarDNI = async () => {
-    const dniVal = form.getValues("dni");
-    if (dniVal.length !== 8) {
-      toast.error("Ingrese un DNI válido de 8 dígitos");
-      return;
-    }
-    setIsSearchingDNI(true);
-    try {
-      const res = await axios.get(`/api/dni?numero=${dniVal}`);
-      if (res.data && res.data.nombreCompleto) {
-        form.setValue("representanteLegal", res.data.nombreCompleto);
-        toast.success("DNI encontrado en eldni.com");
-      }
-    } catch (error) {
-      toast.error("No se pudo encontrar el DNI o el servicio está inactivo.");
-    } finally {
-      setIsSearchingDNI(false);
-    }
-  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
@@ -70,6 +51,7 @@ export default function SolicitarPage() {
       formData.append("ruc", values.ruc);
       formData.append("dni", values.dni);
       formData.append("representanteLegal", values.representanteLegal);
+      formData.append("rubro", values.rubro);
       formData.append("area", values.area);
       formData.append("tipo", values.tipo);
       formData.append("plano", values.plano[0]);
@@ -161,22 +143,12 @@ export default function SolicitarPage() {
                     <FormItem>
                       <FormLabel className="font-semibold text-slate-300">DNI del Representante</FormLabel>
                       <FormControl>
-                        <div className="flex gap-2">
-                          <Input 
-                            placeholder="Ej. 76543210" 
-                            {...field} 
-                            onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                            className="h-12 flex-1 bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600"
-                          />
-                          <Button 
-                            type="button" 
-                            onClick={buscarDNI} 
-                            disabled={isSearchingDNI}
-                            className="h-12 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-                          >
-                            {isSearchingDNI ? "Buscando..." : "Buscar"}
-                          </Button>
-                        </div>
+                        <Input 
+                          placeholder="Ej. 76543210" 
+                          {...field} 
+                          onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                          className="h-12 bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600"
+                        />
                       </FormControl>
                       <FormMessage className="text-red-400" />
                     </FormItem>
@@ -188,9 +160,39 @@ export default function SolicitarPage() {
                   name="representanteLegal"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold text-slate-300">Nombre del Representante Legal / Titular</FormLabel>
+                      <FormLabel className="font-semibold text-slate-300">Nombres y Apellidos del Titular</FormLabel>
                       <FormControl>
-                        <Input placeholder="Se completará automáticamente" {...field} className="h-12 bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600" />
+                        <Input placeholder="Ej. Juan Pérez" {...field} className="h-12 bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500 placeholder:text-slate-600" />
+                      </FormControl>
+                      <FormMessage className="text-red-400" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="rubro"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold text-slate-300">Rubro del Negocio</FormLabel>
+                      <FormControl>
+                        <select 
+                          className="flex h-12 w-full rounded-md border border-slate-700 bg-slate-950/50 px-3 py-2 text-sm text-white ring-offset-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+                          {...field}
+                        >
+                          <option value="" disabled className="bg-slate-900">Seleccione un rubro</option>
+                          <option value="Bodega / Bazar" className="bg-slate-900">Bodega / Bazar</option>
+                          <option value="Restaurante / Fuente de Soda" className="bg-slate-900">Restaurante / Fuente de Soda</option>
+                          <option value="Farmacia / Botica" className="bg-slate-900">Farmacia / Botica</option>
+                          <option value="Ferretería" className="bg-slate-900">Ferretería</option>
+                          <option value="Peluquería / Barbería" className="bg-slate-900">Peluquería / Barbería</option>
+                          <option value="Librería / Útiles" className="bg-slate-900">Librería / Útiles</option>
+                          <option value="Panadería / Pastelería" className="bg-slate-900">Panadería / Pastelería</option>
+                          <option value="Oficina Administrativa" className="bg-slate-900">Oficina Administrativa</option>
+                          <option value="Otros" className="bg-slate-900">Otros / Actividad Comercial Múltiple</option>
+                        </select>
                       </FormControl>
                       <FormMessage className="text-red-400" />
                     </FormItem>
