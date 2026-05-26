@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
     const response = await axios.get(`${backendUrl}/tramites/dni/${dni}`);
     
     if (response.data && response.data.nombreCompleto) {

@@ -94,15 +94,20 @@ export default function SolicitanteDashboardPage() {
 
   const getStatusBadge = (estado: string) => {
     switch (estado) {
-      case "PAGADO":
       case "APROBADO":
-        return <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full">{estado}</span>;
+        return <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full">APROBADO</span>;
+      case "PAGADO":
+        return <span className="px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-bold rounded-full">PAGADO (EN REVISIÓN)</span>;
+      case "VALIDANDO_PAGO":
+        return <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-full">VALIDANDO PAGO</span>;
+      case "SUBSANADO":
+        return <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full">SUBSANADO (EN REVISIÓN)</span>;
       case "RECHAZADO":
       case "OBSERVADO":
         return <span className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-bold rounded-full">{estado}</span>;
       case "PENDIENTE":
       case "PENDIENTE_PAGO":
-        return <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-bold rounded-full">PENDIENTE DE PAGO</span>;
+        return <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold rounded-full">PENDIENTE DE PAGO</span>;
       default:
         return <span className="px-3 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 text-xs font-bold rounded-full">{estado}</span>;
     }
@@ -139,7 +144,7 @@ export default function SolicitanteDashboardPage() {
           </div>
           <div>
             <p className="text-slate-400 text-sm font-medium">Pendientes de Pago</p>
-            <h3 className="text-2xl font-black text-white">{tramites.filter(t => t.estado === "PENDIENTE").length}</h3>
+            <h3 className="text-2xl font-black text-white">{tramites.filter(t => t.estado === "PENDIENTE_PAGO").length}</h3>
           </div>
         </div>
         <div className="bg-[#0a0f1c] border border-white/5 rounded-3xl p-6 flex items-center gap-4">
@@ -148,7 +153,7 @@ export default function SolicitanteDashboardPage() {
           </div>
           <div>
             <p className="text-slate-400 text-sm font-medium">Pagados / En Proceso</p>
-            <h3 className="text-2xl font-black text-white">{tramites.filter(t => t.estado !== "PENDIENTE" && t.estado !== "RECHAZADO").length}</h3>
+            <h3 className="text-2xl font-black text-white">{tramites.filter(t => t.estado !== "PENDIENTE_PAGO" && t.estado !== "RECHAZADO").length}</h3>
           </div>
         </div>
       </div>
@@ -180,7 +185,7 @@ export default function SolicitanteDashboardPage() {
                     <p className="text-lg font-mono font-medium text-emerald-400">S/ {tramite.montoCobrado.toFixed(2)}</p>
                   </div>
                   
-                  {tramite.estado === "PENDIENTE" ? (
+                  {tramite.estado === "PENDIENTE_PAGO" ? (
                     <button 
                       onClick={() => handlePagar(tramite.id, tramite.ruc)}
                       disabled={payingId === tramite.id}
@@ -198,9 +203,12 @@ export default function SolicitanteDashboardPage() {
                       Descargar Licencia
                     </button>
                   ) : (
-                    <button className="w-full md:w-auto px-4 py-2 bg-[#020617] border border-white/10 hover:border-white/20 text-slate-300 font-bold rounded-lg transition-all">
+                    <Link 
+                      href={`/seguimiento/${tramite.ruc}`}
+                      className="w-full md:w-auto text-center px-4 py-2 bg-[#020617] border border-white/10 hover:border-white/20 text-slate-300 font-bold rounded-lg transition-all block"
+                    >
                       Ver Detalles
-                    </button>
+                    </Link>
                   )}
                 </div>
               </div>
