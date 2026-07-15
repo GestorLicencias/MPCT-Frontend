@@ -2,30 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
   const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [user, setUser] = useState<{ role: string, email: string } | null>(null);
-
-  useEffect(() => {
-    // Check authentication token
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        const payload = JSON.parse(jsonPayload);
-        setUser({ role: payload.role || "ADMIN", email: payload.sub || "Usuario" });
-      } catch (e) {
-        setUser(null);
-      }
-    }
-  }, []);
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
