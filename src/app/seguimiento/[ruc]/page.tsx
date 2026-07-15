@@ -41,6 +41,7 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
 
   // States para Pago
   const [voucher, setVoucher] = useState<File | null>(null);
+  const [numeroComprobante, setNumeroComprobante] = useState("");
   const [pagando, setPagando] = useState(false);
 
   useEffect(() => {
@@ -104,6 +105,10 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
   };
 
   const handlePagoBanco = async () => {
+    if (!numeroComprobante.trim()) {
+      toast.error("Ingrese el número de comprobante (operación) del voucher.");
+      return;
+    }
     if (!voucher) {
       toast.error("Adjunte el voucher de pago del Banco de la Nación.");
       return;
@@ -113,6 +118,7 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
       const formData = new FormData();
       formData.append("metodoPago", "BANCO_NACION");
       formData.append("voucher", voucher);
+      formData.append("numeroComprobante", numeroComprobante.trim());
 
       await axios.post(`${API_URL}/${tramite?.ruc}/pagar`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
@@ -145,17 +151,22 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
   const obsArray = tramite.archivosObservados ? tramite.archivosObservados.split(",") : [];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pt-6 relative z-10">
-      <div className="flex justify-between items-center bg-slate-900/50 backdrop-blur-md p-6 rounded-xl shadow-lg border border-slate-800">
+    <div className="max-w-4xl mx-auto space-y-8 pt-20 pb-24 relative z-10 px-6">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-cyan-500/5 blur-[150px] rounded-full"></div>
+      </div>
+
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center bg-[#030303] p-8 rounded-3xl shadow-2xl border border-white/10 relative overflow-hidden group gap-4">
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Trámite RUC: {tramite.ruc}</h2>
-          <p className="text-slate-400">{tramite.razonSocial}</p>
+          <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Trámite RUC: {tramite.ruc}</h2>
+          <p className="text-white/50 font-mono text-sm uppercase tracking-wider">{tramite.razonSocial}</p>
         </div>
-        <Badge variant="outline" className={`text-base px-4 py-2 border ${
-          tramite.estado === 'APROBADO' ? 'bg-green-500/10 text-green-400 border-green-500/50 shadow-[0_0_10px_rgba(34,197,94,0.2)]' :
-          tramite.estado === 'OBSERVADO' ? 'bg-red-500/10 text-red-400 border-red-500/50 shadow-[0_0_10px_rgba(239,68,68,0.2)]' :
-          tramite.estado === 'VALIDANDO_PAGO' ? 'bg-amber-500/10 text-amber-400 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.2)]' :
-          'bg-cyan-500/10 text-cyan-400 border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+        <Badge variant="outline" className={`text-xs px-4 py-2 border font-mono tracking-widest uppercase rounded-full ${
+          tramite.estado === 'APROBADO' ? 'bg-green-500/10 text-green-400 border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.1)]' :
+          tramite.estado === 'OBSERVADO' ? 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.1)]' :
+          tramite.estado === 'VALIDANDO_PAGO' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)]' :
+          'bg-white/5 text-white border-white/20'
         }`}>
           {tramite.estado.replace("_", " ")}
         </Badge>
@@ -164,22 +175,22 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
       {/* SECCIÓN DINÁMICA DEPENDIENDO DEL ESTADO */}
       
       {tramite.estado === "VALIDANDO_PAGO" && (
-        <Card className="bg-slate-900/40 backdrop-blur-md border-amber-900/50 shadow-xl mt-6">
-          <CardHeader className="bg-amber-950/30 border-b border-slate-800">
-            <CardTitle className="text-amber-400 flex items-center gap-2">
-              <Clock className="h-5 w-5" /> Validando Pago
+        <Card className="bg-[#030303] border-white/10 shadow-2xl mt-6 rounded-3xl overflow-hidden">
+          <CardHeader className="bg-amber-500/5 border-b border-white/5 p-8">
+            <CardTitle className="text-amber-400 flex items-center gap-3 text-xl">
+              <Clock className="h-6 w-6" /> Validando Pago
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-white/40 text-base mt-2">
               Su voucher de pago ha sido recibido y está pendiente de validación manual.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center justify-center py-10 space-y-4 text-center">
-              <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center">
-                <Clock className="h-8 w-8 text-amber-400 animate-pulse" />
+          <CardContent className="p-10">
+            <div className="flex flex-col items-center justify-center py-8 space-y-6 text-center">
+              <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+                <Clock className="h-10 w-10 text-amber-400 animate-pulse" />
               </div>
-              <h3 className="text-xl font-medium text-slate-200">Verificando comprobante</h3>
-              <p className="text-slate-400 max-w-md">
+              <h3 className="text-2xl font-medium text-white tracking-tight">Verificando comprobante</h3>
+              <p className="text-white/50 max-w-md leading-relaxed text-lg">
                 Un administrador está revisando su pago del Banco de la Nación. Este proceso puede demorar hasta 24 horas hábiles. Por favor, regrese más tarde.
               </p>
             </div>
@@ -188,50 +199,69 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
       )}
 
       {tramite.estado === "PENDIENTE_PAGO" && (
-        <Card className="bg-slate-900/40 backdrop-blur-md border-cyan-900/50 shadow-xl">
-          <CardHeader className="bg-cyan-950/30 border-b border-slate-800">
-            <CardTitle className="text-cyan-400 flex items-center gap-2">
-              <CreditCard /> Realizar Pago
+        <Card className="bg-[#030303] border-white/10 shadow-2xl rounded-3xl overflow-hidden">
+          <CardHeader className="bg-white/5 border-b border-white/5 p-8">
+            <CardTitle className="text-white flex items-center gap-3 text-xl tracking-tight">
+              <CreditCard className="text-white/50" /> Realizar Pago
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-white/40 text-base mt-2">
               El costo fijo del trámite es de S/ {(tramite.montoCobrado || 180).toFixed(2)}. Seleccione su método de pago.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 grid md:grid-cols-2 gap-8">
+          <CardContent className="p-8 grid md:grid-cols-2 gap-8">
             
             {tramite.pagoRechazado && (
-              <div className="md:col-span-2 bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg flex items-center gap-3">
-                <AlertCircle className="text-red-500 h-6 w-6 shrink-0" />
-                <p className="text-red-400 font-medium">Su pago por voucher anterior fue rechazado. Verifique su comprobante o comuníquese con su banco antes de volver a enviarlo.</p>
+              <div className="md:col-span-2 bg-red-500/10 border-l-2 border-red-500 p-6 rounded-r-2xl flex items-start gap-4">
+                <AlertCircle className="text-red-500 h-6 w-6 shrink-0 mt-0.5" />
+                <p className="text-red-400/90 leading-relaxed text-sm">Su pago por voucher anterior fue rechazado. Verifique su comprobante o comuníquese con su banco antes de volver a enviarlo.</p>
               </div>
             )}
 
-            <div className="space-y-4 border border-slate-800 rounded-xl p-4 bg-slate-950/50 hover:border-cyan-800/50 transition-colors">
-              <div className="bg-emerald-500/10 border border-emerald-500/50 p-3 rounded-lg flex gap-3 items-start">
-                <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-emerald-200/90 leading-relaxed">
-                  <strong>Recomendado:</strong> El pago con MercadoPago se valida <strong>automáticamente y al instante</strong>, permitiéndole continuar su trámite sin demoras.
+            <div className="space-y-6 border border-white/10 rounded-2xl p-6 bg-[#050505] hover:border-white/20 transition-all">
+              <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex gap-3 items-start">
+                <CheckCircle className="h-5 w-5 text-white/50 shrink-0 mt-0.5" />
+                <p className="text-xs text-white/50 leading-relaxed font-mono uppercase tracking-wider">
+                  Pago automatizado e instantáneo
                 </p>
               </div>
-              <h3 className="font-semibold text-slate-200">MercadoPago (Instantáneo)</h3>
-              <p className="text-sm text-slate-500">Pague de forma segura con Tarjeta de Crédito, Débito o Yape/Plin.</p>
-              <Button onClick={handlePagoMercadoPago} disabled={pagando} className="w-full bg-[#009EE3] hover:bg-[#008ACA] text-white">
-                Pagar con MercadoPago
+              <div>
+                <h3 className="font-semibold text-white text-lg tracking-tight mb-2">MercadoPago</h3>
+                <p className="text-sm text-white/40 leading-relaxed">Pague de forma segura con Tarjeta de Crédito, Débito o Yape/Plin. Recomendado para evitar demoras.</p>
+              </div>
+              <Button onClick={handlePagoMercadoPago} disabled={pagando} className="w-full h-14 bg-white hover:bg-white/90 text-black font-semibold rounded-xl text-base">
+                Pagar de inmediato
               </Button>
             </div>
 
-            <div className="space-y-4 border border-slate-800 rounded-xl p-4 bg-slate-950/50 hover:border-cyan-800/50 transition-colors">
-              <div className="bg-amber-500/10 border border-amber-500/50 p-3 rounded-lg flex gap-3 items-start">
+            <div className="space-y-6 border border-white/10 rounded-2xl p-6 bg-[#050505] hover:border-white/20 transition-all">
+              <div className="bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl flex gap-3 items-start">
                 <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-200/90 leading-relaxed">
-                  <strong>Atención:</strong> El pago por Banco de la Nación requiere validación manual, el proceso puede demorar hasta 24 horas.
+                <p className="text-xs text-amber-500/70 leading-relaxed font-mono uppercase tracking-wider">
+                  Validación manual en 24h
                 </p>
               </div>
-              <h3 className="font-semibold text-slate-200">Banco de la Nación</h3>
-              <p className="text-sm text-slate-500">Si pagó en ventanilla, adjunte la foto del voucher (JPG/PNG).</p>
-              <Input type="file" accept="image/*" onChange={(e) => setVoucher(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300" />
-              <Button onClick={handlePagoBanco} disabled={pagando || !voucher} variant="secondary" className="w-full bg-slate-800 hover:bg-slate-700 text-white border border-slate-700">
-                Subir Voucher
+              <div>
+                <h3 className="font-semibold text-white text-lg tracking-tight mb-2">Banco de la Nación</h3>
+                <p className="text-sm text-white/40 leading-relaxed">Si pagó en ventanilla, ingrese el Nº de Operación y adjunte la foto del voucher.</p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Nº de Operación</label>
+                  <Input 
+                    type="text" 
+                    value={numeroComprobante} 
+                    onChange={(e) => setNumeroComprobante(e.target.value)} 
+                    className="h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20 focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-lg"
+                    placeholder="Ej. 0451234"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Voucher (JPG/PNG)</label>
+                  <Input type="file" accept="image/*" onChange={(e) => setVoucher(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white/10 file:text-white file:border-0 hover:file:bg-white/20 rounded-lg py-2" />
+                </div>
+              </div>
+              <Button onClick={handlePagoBanco} disabled={pagando || !voucher || !numeroComprobante.trim()} className="w-full h-14 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-semibold">
+                Subir Voucher y Validar
               </Button>
             </div>
 
@@ -240,83 +270,83 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
       )}
 
       {tramite.estado === "OBSERVADO" && (
-        <Card className="bg-slate-900/40 backdrop-blur-md border-red-900/50 shadow-xl">
-          <CardHeader className="bg-red-950/30 border-b border-slate-800">
-            <CardTitle className="text-red-400 flex items-center gap-2">
+        <Card className="bg-[#030303] border-red-500/20 shadow-2xl rounded-3xl overflow-hidden">
+          <CardHeader className="bg-red-500/5 border-b border-red-500/10 p-8">
+            <CardTitle className="text-red-400 flex items-center gap-3 text-xl">
               <AlertCircle /> Observaciones del Inspector
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-red-400/50 mt-2 text-base">
               Su trámite requiere correcciones. Lea atentamente los detalles y vuelva a subir los archivos indicados.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-6">
+          <CardContent className="p-8 space-y-8">
             
             {tramite.observacionesGenerales && (
-              <div className="bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg">
-                <h4 className="text-red-400 font-semibold mb-1">Motivo de Rechazo:</h4>
-                <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">{tramite.observacionesGenerales}</p>
+              <div className="bg-red-500/10 border-l-2 border-red-500 p-6 rounded-r-2xl">
+                <h4 className="text-red-400 font-mono uppercase tracking-wider text-xs mb-3">Motivo de Rechazo</h4>
+                <p className="text-red-100/70 whitespace-pre-wrap leading-relaxed">{tramite.observacionesGenerales}</p>
               </div>
             )}
 
-            <div className="space-y-4 border border-slate-800 p-5 rounded-lg bg-slate-950/30">
-              <h4 className="font-semibold text-slate-200">Archivos que requieren corrección:</h4>
-              <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-6 border border-white/5 p-8 rounded-2xl bg-[#050505]">
+              <h4 className="font-semibold text-white tracking-tight">Archivos que requieren corrección</h4>
+              <div className="grid md:grid-cols-2 gap-6">
                 {obsArray.includes('PLANO') && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Reemplazar Plano</label>
-                    <Input type="file" accept="application/pdf, image/*" onChange={(e) => setPlano(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer" />
+                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Plano</label>
+                    <Input type="file" accept="application/pdf, image/*" onChange={(e) => setPlano(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
                 )}
                 {obsArray.includes('FOTO1') && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Reemplazar Foto 1</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer" />
+                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 1</label>
+                    <Input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
                 )}
                 {obsArray.includes('FOTO2') && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Reemplazar Foto 2</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto2(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer" />
+                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 2</label>
+                    <Input type="file" accept="image/*" onChange={(e) => setFoto2(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
                 )}
                 {obsArray.includes('FOTO3') && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Reemplazar Foto 3</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto3(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer" />
+                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 3</label>
+                    <Input type="file" accept="image/*" onChange={(e) => setFoto3(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
                 )}
                 {obsArray.includes('FOTO4') && (
                   <div>
-                    <label className="block text-sm font-medium mb-1 text-slate-300">Reemplazar Foto 4</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto4(e.target.files?.[0] || null)} className="bg-slate-900 border-slate-700 text-slate-300 file:bg-slate-800 file:text-white file:border-0 file:rounded file:px-3 file:py-1 file:mr-3 hover:file:bg-slate-700 cursor-pointer" />
+                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 4</label>
+                    <Input type="file" accept="image/*" onChange={(e) => setFoto4(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
                 )}
                 {obsArray.length === 0 && (
-                  <p className="text-slate-500 text-sm">No se especificaron archivos. Por favor, reenvíe la documentación según las observaciones.</p>
+                  <p className="text-white/40 text-sm">No se especificaron archivos. Por favor, reenvíe la documentación según las observaciones.</p>
                 )}
               </div>
             </div>
 
-            <Button onClick={handleSubsanar} disabled={subsanando} className="w-full h-12 bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_15px_rgba(8,145,178,0.3)]">
-              <UploadCloud className="mr-2 h-4 w-4" /> Enviar Correcciones al Inspector
+            <Button onClick={handleSubsanar} disabled={subsanando} className="w-full h-14 bg-white hover:bg-white/90 text-black font-bold rounded-xl mt-4">
+              <UploadCloud className="mr-2 h-5 w-5" /> Enviar Correcciones al Inspector
             </Button>
           </CardContent>
         </Card>
       )}
 
       {tramite.estado === "APROBADO" && (
-        <Card className="bg-slate-900/40 backdrop-blur-md border-green-900/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]">
-          <CardHeader className="bg-green-950/20 border-b border-slate-800">
-            <CardTitle className="text-green-400 flex items-center gap-2">
-              <CheckCircle2 /> ¡Licencia Aprobada!
+        <Card className="bg-[#030303] border-green-500/20 shadow-[0_0_40px_rgba(34,197,94,0.05)] rounded-3xl overflow-hidden">
+          <CardHeader className="bg-green-500/5 border-b border-green-500/10 p-8">
+            <CardTitle className="text-green-400 flex items-center gap-3 text-2xl tracking-tight">
+              <CheckCircle2 className="h-8 w-8" /> ¡Licencia Aprobada!
             </CardTitle>
-            <CardDescription className="text-slate-400">
-              Su trámite ha concluido exitosamente.
+            <CardDescription className="text-green-400/50 text-base mt-2">
+              Su trámite ha concluido exitosamente y su certificado oficial ha sido emitido.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-8">
             <Button 
-              className="w-full md:w-auto h-14 px-8 text-lg bg-green-600 hover:bg-green-500 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)] transition-all"
+              className="w-full h-16 text-lg bg-green-500 hover:bg-green-400 text-black font-bold shadow-[0_0_20px_rgba(34,197,94,0.2)] transition-all rounded-2xl"
               onClick={async () => {
                 try {
                   const res = await axios.get(`${API_URL}/${tramite.ruc}/certificado`, {
@@ -334,18 +364,36 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
                 }
               }}
             >
-              <Download className="mr-2" /> Descargar Certificado
+              <Download className="mr-3 h-6 w-6" /> Descargar Certificado Digital
             </Button>
           </CardContent>
         </Card>
       )}
       
-      {(tramite.estado === "PAGADO" || tramite.estado === "SUBSANADO") && (
-        <Card className="bg-slate-900/40 backdrop-blur-md border-slate-800 shadow-xl">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
-            <Clock size={48} className="mb-4 text-cyan-500/50" />
-            <h3 className="text-xl font-medium text-slate-200 mb-2">Trámite en Revisión</h3>
-            <p>Su trámite está siendo evaluado por un inspector. Por favor, revise este panel más adelante.</p>
+      {["PAGADO", "SUBSANADO", "EN_SUBSANACION", "PROGRAMADO", "EN_INSPECCION"].includes(tramite.estado) && (
+        <Card className="bg-[#030303] border-white/10 shadow-2xl rounded-3xl overflow-hidden">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(255,255,255,0.02)] border border-white/5">
+              <Clock className="h-10 w-10 text-white/40" />
+            </div>
+            <h3 className="text-2xl font-semibold text-white mb-3 tracking-tight">Trámite en Revisión</h3>
+            <p className="text-white/40 max-w-lg leading-relaxed">Su trámite está siendo evaluado o tiene una inspección programada. Por favor, revise este panel más adelante o manténgase atento a su correo electrónico.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {tramite.estado === "TERMINADO" && (
+        <Card className="bg-[#030303] border-red-900/50 shadow-2xl mt-6 rounded-3xl overflow-hidden">
+          <CardHeader className="bg-red-500/5 border-b border-red-500/10 p-8">
+            <CardTitle className="text-red-500 flex items-center gap-3 text-2xl tracking-tight">
+              <AlertCircle className="h-8 w-8" /> Trámite Terminado
+            </CardTitle>
+            <CardDescription className="text-red-400/50 mt-2 text-base leading-relaxed">
+              Lamentablemente, su trámite ha sido terminado. Esto puede deberse a que no se subsanaron las observaciones a tiempo o que las subsanaciones no fueron conformes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 text-white/40">
+            <p>Por favor, inicie un nuevo trámite desde la página de inicio si desea volver a intentarlo y asegúrese de cumplir con todos los requisitos solicitados.</p>
           </CardContent>
         </Card>
       )}

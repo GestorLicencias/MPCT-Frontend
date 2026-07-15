@@ -7,8 +7,11 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, LogOut, Save, Eye } from "lucide-react";
+import { Settings, LogOut, Save, Eye, UserPlus, CreditCard, Key, Shield, BarChart3, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -19,8 +22,9 @@ export default function AdminPage() {
   // Register Inspector State
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [registerRole, setRegisterRole] = useState("INSPECTOR");
   const [isRegistering, setIsRegistering] = useState(false);
-
+  const [activeTab, setActiveTab] = useState("config");
   useEffect(() => {
     fetchConfiguraciones();
   }, []);
@@ -56,8 +60,8 @@ export default function AdminPage() {
     e.preventDefault();
     setIsRegistering(true);
     try {
-      const res = await api.post("/admin/users", { email: registerEmail, password: registerPassword });
-      toast.success(res.data.message || "Inspector registrado con éxito.");
+      const res = await api.post("/admin/users", { email: registerEmail, password: registerPassword, role: registerRole });
+      toast.success(res.data.message || "Usuario registrado con éxito.");
       setRegisterEmail("");
       setRegisterPassword("");
     } catch (error: any) {
@@ -73,101 +77,281 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto relative z-10 pb-10">
-      <div className="flex justify-between items-center bg-slate-900/50 backdrop-blur-md p-6 rounded-xl shadow-lg border border-slate-800">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Settings className="text-cyan-400" /> Panel de Administración
-        </h2>
-        <Button variant="outline" onClick={handleLogout} className="text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white">
-          <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
-        </Button>
-      </div>
+    <div className="flex h-screen bg-black overflow-hidden relative z-10 w-full max-w-[100vw]">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
+      
+      {/* Sidebar */}
+      <aside className="w-72 bg-[#030303] border-r border-white/5 flex flex-col z-20 shrink-0">
+        <div className="p-8 border-b border-white/5">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3 tracking-tight">
+            <Shield className="text-white w-6 h-6" /> Administrador
+          </h2>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 mt-4">
+          <button 
+            onClick={() => setActiveTab("config")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "config" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <Settings className="w-5 h-5" /> Configuraciones
+          </button>
+          <button 
+            onClick={() => setActiveTab("usuarios")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "usuarios" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <UserPlus className="w-5 h-5" /> Usuarios
+          </button>
+          <button 
+            onClick={() => setActiveTab("pagos")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "pagos" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <CreditCard className="w-5 h-5" /> Validar Pagos
+          </button>
+          <button 
+            onClick={() => setActiveTab("cierres")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "cierres" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <BarChart3 className="w-5 h-5" /> Cierres de Caja
+          </button>
+          <button 
+            onClick={() => setActiveTab("password")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "password" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <Key className="w-5 h-5" /> Contraseña
+          </button>
+        </div>
+        <div className="p-6 border-t border-white/5">
+          <Button variant="outline" onClick={handleLogout} className="w-full text-white/70 border-white/10 hover:bg-white/5 hover:text-white rounded-xl h-12">
+            <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
+          </Button>
+        </div>
+      </aside>
 
-      <Card className="bg-slate-900/40 backdrop-blur-md border-slate-800 shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-white">Configuraciones del Sistema</CardTitle>
-          <CardDescription className="text-slate-400">Modifique las tasas y precios base de los trámites. Los cambios afectarán a las nuevas solicitudes.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {loading ? (
-            <div className="text-center text-slate-500 py-10">Cargando configuraciones...</div>
-          ) : configuraciones.length === 0 ? (
-            <div className="text-center text-slate-500 py-10">No hay configuraciones disponibles.</div>
-          ) : (
-            <div className="grid gap-6">
-              {configuraciones.map((conf) => (
-                <div key={conf.clave} className="flex flex-col md:flex-row gap-4 items-end bg-slate-950/50 p-6 rounded-lg border border-slate-800 hover:border-cyan-800/50 transition-colors">
-                  <div className="flex-1 space-y-2 w-full">
-                    <label className="text-sm font-semibold text-slate-300">{conf.clave.replace("_", " ")}</label>
-                    <p className="text-xs text-slate-500">{conf.descripcion}</p>
-                    <div className="relative">
-                      <span className="absolute left-3 top-3 text-slate-500">S/</span>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto p-10 z-20">
+        <div className="max-w-4xl mx-auto space-y-6 pt-4 pb-20">
+          {activeTab === "config" && (
+            <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden">
+              <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+                <CardTitle className="text-white text-2xl tracking-tight">Configuraciones del Sistema</CardTitle>
+                <CardDescription className="text-white/50 text-base mt-2">Modifique las tasas y precios base de los trámites. Los cambios afectarán a las nuevas solicitudes.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6 p-8">
+                {loading ? (
+                  <div className="text-center text-white/40 py-10">Cargando configuraciones...</div>
+                ) : configuraciones.length === 0 ? (
+                  <div className="text-center text-white/40 py-10">No hay configuraciones disponibles.</div>
+                ) : (
+                  <div className="grid gap-6">
+                    {configuraciones.map((conf) => (
+                      <div key={conf.clave} className="flex flex-col md:flex-row gap-6 items-end bg-[#030303] p-6 rounded-2xl border border-white/5 hover:border-white/10 transition-colors">
+                        <div className="flex-1 space-y-3 w-full">
+                          <label className="text-xs font-mono uppercase tracking-wider text-white/50">{conf.clave.replace("_", " ")}</label>
+                          <p className="text-sm text-white/40 leading-relaxed">{conf.descripcion}</p>
+                          <div className="relative">
+                            <span className="absolute left-4 top-3.5 text-white/40">S/</span>
+                            <Input 
+                              key={`input-${conf.clave}-${conf.valor}`}
+                              type="number" 
+                              step="0.01"
+                              className="pl-10 bg-white/5 border-white/10 h-14 text-lg text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+                              defaultValue={conf.valor}
+                              id={`input-${conf.clave}`}
+                            />
+                          </div>
+                        </div>
+                        <Button 
+                          className="h-14 px-8 w-full md:w-auto bg-white text-black font-semibold hover:bg-white/90 rounded-xl transition-all"
+                          disabled={saving === conf.clave}
+                          onClick={() => {
+                            const input = document.getElementById(`input-${conf.clave}`) as HTMLInputElement;
+                            handleUpdate(conf.clave, input.value);
+                          }}
+                        >
+                          {saving === conf.clave ? "Guardando..." : <><Save className="mr-2 h-5 w-5" /> Guardar Cambios</>}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "usuarios" && (
+            <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden">
+              <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+                <CardTitle className="text-white text-2xl tracking-tight">Gestión de Usuarios</CardTitle>
+                <CardDescription className="text-white/50 text-base mt-2">Crea credenciales de acceso para nuevos inspectores o cajeros municipales.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <form onSubmit={handleRegister} className="space-y-6">
+                  <div>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Cargo / Rol</label>
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setRegisterRole("INSPECTOR")}
+                        className={`flex-1 h-14 rounded-xl border flex items-center justify-center font-medium transition-all ${registerRole === "INSPECTOR" ? "bg-white text-black border-white" : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white"}`}
+                      >
+                        Inspector
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegisterRole("CAJERO")}
+                        className={`flex-1 h-14 rounded-xl border flex items-center justify-center font-medium transition-all ${registerRole === "CAJERO" ? "bg-white text-black border-white" : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white"}`}
+                      >
+                        Cajero
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Correo Electrónico</label>
                       <Input 
-                        key={`input-${conf.clave}-${conf.valor}`}
-                        type="number" 
-                        step="0.01"
-                        className="pl-8 bg-slate-900 border-slate-700 h-12 text-lg text-white focus-visible:ring-cyan-500"
-                        defaultValue={conf.valor}
-                        id={`input-${conf.clave}`}
+                        type="email" 
+                        required 
+                        value={registerEmail} 
+                        onChange={(e) => setRegisterEmail(e.target.value)}
+                        className="h-14 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+                        placeholder="ej. carlos@mpct.gob.pe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Contraseña Segura</label>
+                      <Input 
+                        type="password" 
+                        required 
+                        value={registerPassword} 
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        className="h-14 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
                       />
                     </div>
                   </div>
-                  <Button 
-                    className="h-12 px-6 w-full md:w-auto bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(8,145,178,0.3)] transition-all"
-                    disabled={saving === conf.clave}
-                    onClick={() => {
-                      const input = document.getElementById(`input-${conf.clave}`) as HTMLInputElement;
-                      handleUpdate(conf.clave, input.value);
-                    }}
-                  >
-                    {saving === conf.clave ? "Guardando..." : <><Save className="mr-2 h-4 w-4" /> Guardar</>}
+                  <Button type="submit" disabled={isRegistering} className="h-14 px-8 bg-white text-black font-semibold hover:bg-white/90 rounded-xl w-full md:w-auto">
+                    {isRegistering ? "Registrando..." : "Crear Cuenta de Usuario"}
                   </Button>
-                </div>
-              ))}
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === "password" && (
+            <div className="relative z-10">
+              <ChangePasswordSection />
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-slate-900/40 backdrop-blur-md border-slate-800 shadow-xl mt-6">
-        <CardHeader>
-          <CardTitle className="text-white">Gestión de Inspectores</CardTitle>
-          <CardDescription className="text-slate-400">Crea credenciales de acceso para nuevos inspectores municipales.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1 text-slate-300">Correo Electrónico del Inspector</label>
-                <Input 
-                  type="email" 
-                  required 
-                  value={registerEmail} 
-                  onChange={(e) => setRegisterEmail(e.target.value)}
-                  className="bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500"
-                  placeholder="ej. carlos@mpct.gob.pe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1 text-slate-300">Contraseña Segura</label>
-                <Input 
-                  type="password" 
-                  required 
-                  value={registerPassword} 
-                  onChange={(e) => setRegisterPassword(e.target.value)}
-                  className="bg-slate-950/50 border-slate-700 text-white focus-visible:ring-cyan-500"
-                />
-              </div>
+          
+          {activeTab === "pagos" && (
+            <div className="relative z-10">
+              <ValidacionPagosSection />
             </div>
-            <Button type="submit" disabled={isRegistering} className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.3)] w-full md:w-auto">
-              {isRegistering ? "Registrando..." : "Crear Cuenta de Inspector"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          )}
 
-      <ValidacionPagosSection />
+          {activeTab === "cierres" && (
+            <div className="relative z-10">
+              <ReporteCierresSection />
+            </div>
+          )}
+        </div>
+      </main>
     </div>
+  );
+}
+
+function ReporteCierresSection() {
+  const [cierres, setCierres] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCierres();
+  }, []);
+
+  const fetchCierres = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/admin/caja/cierres");
+      setCierres(res.data);
+    } catch (error) {
+      toast.error("Error al obtener el reporte de cierres de caja");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl relative overflow-hidden">
+      <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5 flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-white text-2xl tracking-tight flex items-center gap-2">
+            Reporte de Cierres de Caja
+          </CardTitle>
+          <CardDescription className="text-white/50 text-base mt-2">
+            Auditoría de los cierres realizados por los cajeros y detección de descuadres (sobrantes/faltantes).
+          </CardDescription>
+        </div>
+        <Button onClick={fetchCierres} variant="outline" className="border-white/10 text-white hover:bg-white/5 h-10 px-4 rounded-xl">
+          Actualizar Reporte
+        </Button>
+      </CardHeader>
+      <CardContent className="p-8">
+        {loading ? (
+          <div className="flex justify-center py-10 text-cyan-400 animate-pulse">Cargando reporte...</div>
+        ) : cierres.length === 0 ? (
+          <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
+            <BarChart3 className="w-12 h-12 text-white/20 mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-white mb-2">No hay Cierres Registrados</h3>
+            <p className="text-white/50">Aún no se ha cerrado ninguna caja en el sistema.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {cierres.map((cierre, idx) => {
+              const dif = parseFloat(cierre.diferencia);
+              const descuadre = dif !== 0;
+              const bgColor = descuadre ? (dif > 0 ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30') : 'bg-emerald-500/10 border-emerald-500/30';
+              const iconColor = descuadre ? (dif > 0 ? 'text-amber-500/50' : 'text-red-500/50') : 'text-emerald-500/50';
+
+              return (
+                <div key={idx} className={`p-5 rounded-2xl border flex items-center justify-between ${bgColor}`}>
+                  <div className="space-y-1 w-full max-w-xl">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm ${descuadre ? (dif > 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400') : 'bg-emerald-500/20 text-emerald-400'}`}>
+                        {descuadre ? (dif > 0 ? 'SOBRANTE' : 'FALTANTE') : 'CUADRADA PERFECTO'}
+                      </span>
+                      <span className="text-white font-semibold">{cierre.usuario}</span>
+                    </div>
+                    <p className="text-sm text-white/60">
+                      Fecha Cierre: <span className="text-white">{new Date(cierre.fechaCierre).toLocaleString()}</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-4 mt-3 pt-3 border-t border-white/5">
+                      <div>
+                        <p className="text-xs text-white/40 uppercase">Apertura</p>
+                        <p className="text-sm text-white">S/ {parseFloat(cierre.montoInicial).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/40 uppercase">Monto Físico</p>
+                        <p className="text-sm text-white font-semibold">S/ {parseFloat(cierre.montoDeclarado).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/40 uppercase">Sistema (Esperado)</p>
+                        <p className="text-sm text-white">S/ {parseFloat(cierre.montoEsperado).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2 text-right">
+                    {descuadre ? <AlertTriangle className={`w-8 h-8 ${iconColor}`} /> : <CheckCircle2 className={`w-8 h-8 ${iconColor}`} />}
+                    {descuadre && (
+                      <p className={`text-xl font-bold mt-2 ${dif > 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                        {dif > 0 ? '+' : '-'} S/ {Math.abs(dif).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -214,42 +398,42 @@ function ValidacionPagosSection() {
 
   return (
     <>
-      <Card className="bg-slate-900/40 backdrop-blur-md border-slate-800 shadow-xl mt-6">
-        <CardHeader>
-          <CardTitle className="text-white">Validación de Pagos (Banco de la Nación)</CardTitle>
-          <CardDescription className="text-slate-400">Apruebe o rechace los vouchers de pago subidos por los solicitantes.</CardDescription>
+      <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl overflow-hidden">
+        <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+          <CardTitle className="text-white text-2xl tracking-tight">Validación de Pagos (Banco de la Nación)</CardTitle>
+          <CardDescription className="text-white/50">Apruebe o rechace los vouchers de pago subidos por los solicitantes.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center text-slate-500 py-10">Cargando pagos pendientes...</div>
+            <div className="text-center text-white/40 py-10">Cargando pagos pendientes...</div>
           ) : pagos.length === 0 ? (
-            <div className="text-center text-slate-500 py-10">No hay pagos pendientes de validación.</div>
+            <div className="text-center text-white/40 py-10">No hay pagos pendientes de validación.</div>
           ) : (
             <div className="space-y-4">
               {pagos.map((pago) => (
-                <div key={pago.id} className="bg-slate-950/50 p-4 rounded-lg border border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-cyan-800/50 transition-colors">
+                <div key={pago.id} className="bg-[#030303] p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-white/10 transition-colors">
                   <div className="flex-1 w-full space-y-1">
-                    <h4 className="font-semibold text-slate-200">Trámite RUC: {pago.rucTramite}</h4>
-                    <p className="text-sm text-slate-400">{pago.razonSocial}</p>
-                    <p className="text-xs text-slate-500 font-mono">Monto a verificar: S/ {pago.monto.toFixed(2)}</p>
+                    <h4 className="font-semibold text-white">Trámite RUC: {pago.rucTramite}</h4>
+                    <p className="text-sm text-white/40">{pago.razonSocial}</p>
+                    <p className="text-xs text-white/50 font-mono">Monto a verificar: S/ {pago.monto.toFixed(2)}</p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                     <Button 
                       variant="outline" 
-                      className="bg-slate-900/50 border-slate-700 text-cyan-400 hover:bg-slate-800 hover:text-cyan-300"
+                      className="bg-black border-white/10 text-white hover:bg-white/5 rounded-xl"
                       onClick={() => handleViewVoucher(pago.id)}
                     >
                       <Eye className="mr-2 h-4 w-4" /> Ver Voucher
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white"
+                      className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-xl"
                       onClick={() => validarPago(pago.id, false)}
                     >
                       Rechazar
                     </Button>
                     <Button 
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                      className="bg-white text-black font-semibold hover:bg-white/90 rounded-xl"
                       onClick={() => validarPago(pago.id, true)}
                     >
                       Aprobar
@@ -263,12 +447,12 @@ function ValidacionPagosSection() {
       </Card>
 
       <Dialog open={!!selectedVoucher} onOpenChange={(open) => !open && setSelectedVoucher(null)}>
-        <DialogContent className="max-w-3xl bg-slate-900 border-slate-800 text-white">
+        <DialogContent className="max-w-3xl bg-[#080808] border-white/10 text-white rounded-3xl">
           <DialogHeader>
             <DialogTitle>Visualización del Voucher</DialogTitle>
-            <DialogDescription className="text-slate-400">Verifique los datos de la transferencia antes de aprobar o rechazar.</DialogDescription>
+            <DialogDescription className="text-white/50">Verifique los datos de la transferencia antes de aprobar o rechazar.</DialogDescription>
           </DialogHeader>
-          <div className="flex items-center justify-center bg-slate-950 rounded-xl overflow-hidden min-h-[300px] border border-slate-800">
+          <div className="flex items-center justify-center bg-black rounded-2xl overflow-hidden min-h-[300px] border border-white/5">
             {selectedVoucher && (
               <img src={selectedVoucher} alt="Voucher de pago" className="max-h-[70vh] object-contain w-full" />
             )}
@@ -279,4 +463,82 @@ function ValidacionPagosSection() {
   );
 }
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+  newPassword: z.string().min(8, "La nueva contraseña debe tener al menos 8 caracteres"),
+  confirmPassword: z.string()
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+function ChangePasswordSection() {
+  const [isChanging, setIsChanging] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema)
+  });
+
+  const onSubmit = async (data: ChangePasswordFormValues) => {
+    setIsChanging(true);
+    try {
+      await api.put("/admin/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword
+      });
+      toast.success("Contraseña actualizada exitosamente.");
+      reset();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error al cambiar la contraseña.");
+    } finally {
+      setIsChanging(false);
+    }
+  };
+
+  return (
+    <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl overflow-hidden">
+      <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+        <CardTitle className="text-white text-2xl tracking-tight">Cambiar Contraseña</CardTitle>
+        <CardDescription className="text-white/50">Actualiza tu contraseña de administrador (mínimo 8 caracteres).</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-2">Contraseña Actual</label>
+              <Input 
+                type="password" 
+                {...register("currentPassword")}
+                className="bg-black border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              />
+              {errors.currentPassword && <span className="text-xs text-red-500 mt-1 block">{errors.currentPassword.message}</span>}
+            </div>
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-2">Nueva Contraseña</label>
+              <Input 
+                type="password" 
+                {...register("newPassword")}
+                className="bg-black border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              />
+              {errors.newPassword && <span className="text-xs text-red-500 mt-1 block">{errors.newPassword.message}</span>}
+            </div>
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-2">Confirmar Contraseña</label>
+              <Input 
+                type="password" 
+                {...register("confirmPassword")}
+                className="bg-black border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              />
+              {errors.confirmPassword && <span className="text-xs text-red-500 mt-1 block">{errors.confirmPassword.message}</span>}
+            </div>
+          </div>
+          <Button type="submit" disabled={isChanging} className="bg-white text-black font-semibold hover:bg-white/90 rounded-xl w-full md:w-auto">
+            {isChanging ? "Actualizando..." : "Cambiar Contraseña"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 

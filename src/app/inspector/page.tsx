@@ -28,10 +28,7 @@ export default function InspectorPage() {
 
   const fetchPendientes = async () => {
     try {
-      const [resInsp, resRev] = await Promise.all([
-        api.get("/inspecciones/pendientes").catch(() => ({ data: [] })),
-        api.get("/admin/tramites/revision").catch(() => ({ data: [] }))
-      ]);
+      const resInsp = await api.get("/inspecciones/pendientes");
       
       const mappedInsp = resInsp.data.map((insp: any) => ({
         ...insp,
@@ -45,19 +42,7 @@ export default function InspectorPage() {
         tramiteObj: insp.tramite
       }));
 
-      const mappedRev = resRev.data.map((tram: any) => ({
-        id: tram.ruc,
-        isInspeccion: false,
-        sortDate: new Date(tram.createdAt).getTime(),
-        displayDate: tram.createdAt,
-        displayRuc: tram.ruc,
-        displayRazon: tram.razonSocial,
-        displayRubro: tram.rubro,
-        displayTipo: tram.tipo,
-        tramiteObj: tram
-      }));
-
-      const combined = [...mappedInsp, ...mappedRev].sort((a, b) => b.sortDate - a.sortDate);
+      const combined = mappedInsp.sort((a: any, b: any) => b.sortDate - a.sortDate);
       setInspecciones(combined);
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -73,25 +58,6 @@ export default function InspectorPage() {
   };
 
   const handleEvaluar = async (conforme: boolean) => {
-    if (!selected.isInspeccion) {
-        if (!conforme) {
-            toast.error("La observación directa de modificaciones no está habilitada en esta vista.");
-            return;
-        }
-        setEvaluando(true);
-        try {
-            await api.post(`/admin/tramites/${selected.displayRuc}/aprobar-revision`);
-            toast.success("Modificación aprobada y licencia emitida.");
-            setSelected(null);
-            fetchPendientes();
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || "Error al aprobar la modificación.");
-        } finally {
-            setEvaluando(false);
-        }
-        return;
-    }
-
     if (!conforme && !observaciones.trim()) {
       toast.error("Debe ingresar observaciones para rechazar el trámite.");
       return;
@@ -145,54 +111,57 @@ export default function InspectorPage() {
   };
 
   return (
-    <div className="space-y-6 relative z-10">
-      <div className="flex justify-between items-center bg-slate-900/50 backdrop-blur-md p-6 rounded-xl shadow-lg border border-slate-800">
-        <h2 className="text-2xl font-bold text-white">Bandeja de Inspector</h2>
-        <Button variant="outline" onClick={handleLogout} className="text-slate-300 border-slate-700 hover:bg-slate-800 hover:text-white">
+    <div className="space-y-6 relative z-10 min-h-screen">
+      {/* Background Ambience */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+      <div className="flex justify-between items-center bg-[#030303] border border-white/10 p-6 rounded-3xl shadow-2xl relative z-10">
+        <h2 className="text-2xl font-bold text-white tracking-tight">Bandeja de Inspector</h2>
+        <Button variant="outline" onClick={handleLogout} className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl">
           <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
         </Button>
       </div>
 
-      <Card className="bg-slate-900/40 backdrop-blur-md border-slate-800 shadow-xl">
+      <Card className="bg-[#030303] border-white/10 shadow-2xl rounded-3xl relative z-10">
         <CardHeader>
-          <CardTitle className="text-white">Inspecciones y Revisiones Pendientes</CardTitle>
-          <CardDescription className="text-slate-400">
+          <CardTitle className="text-white text-xl tracking-tight">Inspecciones y Revisiones Pendientes</CardTitle>
+          <CardDescription className="text-white/50 text-sm">
             Trámites de Licencia Nueva, Renovación y Modificación asignados o pendientes de revisión.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-slate-800 overflow-hidden">
+          <div className="rounded-2xl border border-white/10 overflow-hidden bg-black/50">
             <Table>
-              <TableHeader className="bg-slate-950/80 border-b border-slate-800">
-                <TableRow className="border-slate-800 hover:bg-transparent">
-                  <TableHead className="text-slate-400">Fecha</TableHead>
-                  <TableHead className="text-slate-400">RUC</TableHead>
-                  <TableHead className="text-slate-400">Razón Social</TableHead>
-                  <TableHead className="text-slate-400">Tipo / Rubro</TableHead>
-                  <TableHead className="text-right text-slate-400">Acción</TableHead>
+              <TableHeader className="bg-black border-b border-white/10">
+                <TableRow className="border-white/10 hover:bg-transparent">
+                  <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Fecha</TableHead>
+                  <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">RUC</TableHead>
+                  <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Razón Social</TableHead>
+                  <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Tipo / Rubro</TableHead>
+                  <TableHead className="text-right text-xs font-mono uppercase tracking-wider text-white/50">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {inspecciones.length === 0 ? (
-                  <TableRow className="border-slate-800 hover:bg-transparent">
-                    <TableCell colSpan={5} className="text-center py-8 text-slate-500">
+                  <TableRow className="border-white/10 hover:bg-transparent">
+                    <TableCell colSpan={5} className="text-center py-8 text-white/40">
                       No hay trámites pendientes de evaluación.
                     </TableCell>
                   </TableRow>
                 ) : (
                   inspecciones.map((item) => (
-                    <TableRow key={`${item.isInspeccion ? 'insp' : 'rev'}-${item.id}`} className="border-slate-800 hover:bg-slate-800/50 transition-colors">
-                      <TableCell className="text-slate-300">{new Date(item.displayDate).toLocaleDateString()}</TableCell>
+                    <TableRow key={`insp-${item.id}`} className="border-white/10 hover:bg-white/5 transition-colors">
+                      <TableCell className="text-white/70">{new Date(item.displayDate).toLocaleDateString()}</TableCell>
                       <TableCell className="font-medium text-white">{item.displayRuc}</TableCell>
-                      <TableCell className="text-slate-300">{item.displayRazon}</TableCell>
+                      <TableCell className="text-white/70">{item.displayRazon}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={`mr-2 ${item.displayTipo === 'MODIFICACION' ? 'text-amber-400 border-amber-400/30' : 'text-cyan-400 border-cyan-400/30'}`}>
+                        <Badge variant="outline" className={`mr-2 rounded-lg font-mono text-[10px] uppercase tracking-wider ${item.displayTipo === 'MODIFICACION' ? 'text-amber-400 border-amber-400/30' : 'text-blue-400 border-blue-400/30'}`}>
                           {item.displayTipo}
                         </Badge>
-                        <Badge variant="secondary" className="bg-slate-800 text-slate-300 border-slate-700">{item.displayRubro}</Badge>
+                        <Badge variant="secondary" className="bg-white/5 text-white/70 border-white/10 rounded-lg font-mono text-[10px] uppercase tracking-wider">{item.displayRubro}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button onClick={() => setSelected(item)} className="bg-cyan-600 hover:bg-cyan-500 text-white shadow-[0_0_10px_rgba(8,145,178,0.3)]">
+                        <Button onClick={() => setSelected(item)} className="bg-white text-black hover:bg-white/90 rounded-xl font-semibold shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                           Evaluar
                         </Button>
                       </TableCell>
@@ -213,50 +182,50 @@ export default function InspectorPage() {
           }
       }}>
         {selected && (
-          <DialogContent className="sm:max-w-[650px] md:max-w-[750px] bg-slate-950/80 backdrop-blur-xl border-slate-800 text-slate-200">
+          <DialogContent className="sm:max-w-[650px] md:max-w-[750px] bg-[#080808] border-white/10 text-white rounded-3xl shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-white">Evaluación - {selected.displayTipo}</DialogTitle>
-              <DialogDescription className="text-slate-400">RUC: {selected.displayRuc} - {selected.displayRazon}</DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-white tracking-tight">Evaluación - {selected.displayTipo}</DialogTitle>
+              <DialogDescription className="text-white/50">RUC: {selected.displayRuc} - {selected.displayRazon}</DialogDescription>
             </DialogHeader>
             <div className="py-4 max-h-[70vh] overflow-y-auto pr-2 space-y-6">
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 space-y-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Área del Local</p>
-                  <p className="text-xl font-bold text-cyan-400">{selected.tramiteObj.area} m²</p>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1">
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">Área del Local</p>
+                  <p className="text-xl font-bold text-white">{selected.tramiteObj.area} m²</p>
                 </div>
-                <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 space-y-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Estado de Evaluación</p>
-                  <Badge variant="outline" className="text-amber-400 border-amber-400/30">Pendiente</Badge>
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1">
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">Estado de Evaluación</p>
+                  <Badge variant="outline" className="text-amber-400 border-amber-400/30 rounded-lg font-mono text-[10px] uppercase tracking-wider mt-1">Pendiente</Badge>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Dirección Fiscal</p>
-                  <p className="font-semibold text-slate-200">{selected.tramiteObj.domicilioFiscal}</p>
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">Dirección Fiscal</p>
+                  <p className="font-semibold text-white/90">{selected.tramiteObj.domicilioFiscal}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Representante Legal</p>
-                  <p className="font-semibold text-slate-200">{selected.tramiteObj.representanteLegal}</p>
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">Representante Legal</p>
+                  <p className="font-semibold text-white/90">{selected.tramiteObj.representanteLegal}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">DNI Representante</p>
-                  <p className="font-semibold text-slate-200 font-mono">{selected.tramiteObj.dni}</p>
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">DNI Representante</p>
+                  <p className="font-semibold text-white/90 font-mono">{selected.tramiteObj.dni}</p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Rubro / Giro</p>
-                  <div className="p-3 bg-slate-900/50 rounded-lg border border-slate-800">
-                    <p className="text-sm text-slate-300 font-medium whitespace-pre-wrap leading-relaxed">
+                  <p className="text-xs font-mono uppercase tracking-wider text-white/50">Rubro / Giro</p>
+                  <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <p className="text-sm text-white/70 font-medium whitespace-pre-wrap leading-relaxed">
                       {selected.tramiteObj.rubro}
                     </p>
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t border-slate-800 space-y-4 md:col-span-2">
-                  <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Documentos Técnicos</h4>
+                <div className="pt-4 border-t border-white/10 space-y-4 md:col-span-2">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-white/50">Documentos Técnicos</h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={async () => {
+                    <Button variant="outline" className="w-full justify-start bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl" onClick={async () => {
                       try {
                         const res = await api.get(`/tramites/${selected.tramiteObj.ruc}/archivos/plano`, { responseType: 'blob' });
                         const contentType = res.headers['content-type'] || '';
@@ -276,106 +245,83 @@ export default function InspectorPage() {
                         toast.error("Error al descargar el plano.");
                       }
                     }}>
-                      <FileText className="mr-2 h-4 w-4 text-cyan-500" /> Plano
+                      <FileText className="mr-2 h-4 w-4 text-white/70" /> Plano
                     </Button>
-                    <Button variant="outline" className="w-full justify-start bg-slate-900/50 border-slate-700" onClick={() => openLightbox(0)}>
-                      <ImageIcon className="mr-2 h-4 w-4 text-indigo-400" /> Imágenes
+                    <Button variant="outline" className="w-full justify-start bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl" onClick={() => openLightbox(0)}>
+                      <ImageIcon className="mr-2 h-4 w-4 text-white/70" /> Imágenes
                     </Button>
                   </div>
                 </div>
                 
-                {selected.isInspeccion && (
-                  <div className="pt-4 border-t border-slate-800 space-y-3 md:col-span-2">
-                    <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Evaluación</h4>
-                    
-                    <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-lg space-y-3">
-                      <p className="text-sm text-slate-400 mb-2">Seleccione los documentos incorrectos (Obligatorio al Observar):</p>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {['PLANO', 'FOTO1', 'FOTO2', 'FOTO3', 'FOTO4'].map((doc) => (
-                          <label key={doc} className="flex items-center space-x-2 cursor-pointer group">
-                            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${archivosObservados.includes(doc) ? 'bg-cyan-500 border-cyan-500' : 'border-slate-600 bg-slate-800 group-hover:border-cyan-500'}`}>
-                              {archivosObservados.includes(doc) && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-                            </div>
-                            <input
-                              type="checkbox"
-                              className="hidden"
-                              checked={archivosObservados.includes(doc)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setArchivosObservados([...archivosObservados, doc]);
-                                } else {
-                                  setArchivosObservados(archivosObservados.filter(item => item !== doc));
-                                }
-                              }}
-                            />
-                            <span className="text-sm text-slate-300 group-hover:text-white transition-colors">
-                              {doc === 'PLANO' ? 'Plano' : doc.replace('FOTO', 'Foto ')}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                <div className="pt-4 border-t border-white/10 space-y-3 md:col-span-2">
+                  <h4 className="text-xs font-mono uppercase tracking-wider text-white/50">Evaluación</h4>
+                  
+                  <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
+                    <p className="text-sm text-white/50 mb-2">Seleccione los documentos incorrectos (Obligatorio al Observar):</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {['PLANO', 'FOTO1', 'FOTO2', 'FOTO3', 'FOTO4'].map((doc) => (
+                        <label key={doc} className="flex items-center space-x-2 cursor-pointer group">
+                          <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${archivosObservados.includes(doc) ? 'bg-white border-white' : 'border-white/20 bg-black group-hover:border-white/50'}`}>
+                            {archivosObservados.includes(doc) && <CheckCircle className="w-3.5 h-3.5 text-black" />}
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={archivosObservados.includes(doc)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setArchivosObservados([...archivosObservados, doc]);
+                              } else {
+                                setArchivosObservados(archivosObservados.filter(item => item !== doc));
+                              }
+                            }}
+                          />
+                          <span className="text-sm text-white/70 group-hover:text-white transition-colors">
+                            {doc === 'PLANO' ? 'Plano' : doc.replace('FOTO', 'Foto ')}
+                          </span>
+                        </label>
+                      ))}
                     </div>
-
-                    <textarea 
-                      placeholder="Observaciones o sustento (obligatorio si se observa el trámite)..." 
-                      value={observaciones}
-                      onChange={(e) => setObservaciones(e.target.value)}
-                      className="bg-slate-900/50 border-slate-700 text-slate-200 placeholder:text-slate-500 min-h-[100px] w-full rounded-md border px-3 py-2 text-sm focus:ring-cyan-500/50 focus-visible:outline-none focus-visible:ring-2 resize-none mt-2"
-                    />
                   </div>
-                )}
+
+                  <textarea 
+                    placeholder="Observaciones o sustento (obligatorio si se observa el trámite)..." 
+                    value={observaciones}
+                    onChange={(e) => setObservaciones(e.target.value)}
+                    className="bg-black border-white/10 text-white placeholder:text-white/40 min-h-[100px] w-full rounded-xl border px-3 py-2 text-sm focus:ring-white/30 focus-visible:outline-none focus-visible:ring-2 resize-none mt-2"
+                  />
+                </div>
               </div>
             </div>
-            <DialogFooter className="flex gap-3 sm:justify-end pt-4 border-t border-slate-800">
-              {selected.isInspeccion ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleEvaluar(false)}
-                    disabled={evaluando}
-                    className="bg-rose-500/10 text-rose-500 border-rose-500/20 hover:bg-rose-500 hover:text-white"
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Observar
-                  </Button>
-                  <Button 
-                    onClick={() => handleEvaluar(true)}
-                    disabled={evaluando || archivosObservados.length > 0 || observaciones.trim().length > 0}
-                    className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Aprobar
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setSelected(null)}
-                    className="border-slate-700 hover:bg-slate-800 text-slate-300"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={() => handleEvaluar(true)}
-                    disabled={evaluando}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                  >
-                    {evaluando ? "Aprobando..." : "Aprobar y Emitir Licencia"}
-                  </Button>
-                </>
-              )}
-            </DialogFooter>
+              <DialogFooter className="flex gap-3 sm:justify-end pt-4 border-t border-white/10">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleEvaluar(false)}
+                  disabled={evaluando}
+                  className="bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 rounded-xl"
+                >
+                  <XCircle className="mr-2 h-4 w-4" />
+                  Observar
+                </Button>
+                <Button 
+                  onClick={() => handleEvaluar(true)}
+                  disabled={evaluando || archivosObservados.length > 0 || observaciones.trim().length > 0}
+                  className="bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Aprobar
+                </Button>
+              </DialogFooter>
           </DialogContent>
         )}
       </Dialog>
 
       {/* Lightbox / Carrusel de Imágenes */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
-        <DialogContent className="max-w-5xl w-[95vw] h-[90vh] bg-slate-950/95 backdrop-blur-xl border-slate-800 p-0 flex flex-col items-center justify-center shadow-2xl">
+        <DialogContent className="max-w-5xl w-[95vw] h-[90vh] bg-[#030303]/95 backdrop-blur-xl border-white/10 p-0 flex flex-col items-center justify-center shadow-2xl rounded-3xl">
           {lightboxImages.length === 0 ? (
             <div className="flex items-center justify-center h-full w-full">
-              <p className="text-slate-300 text-lg">No hay imágenes disponibles para esta inspección</p>
+              <p className="text-white/70 text-lg">No hay imágenes disponibles para esta inspección</p>
             </div>
           ) : (
             <div className="relative w-full h-full flex flex-col items-center justify-center p-6">
@@ -383,7 +329,7 @@ export default function InspectorPage() {
               <button 
                 onClick={() => setLightboxIndex(prev => prev - 1)}
                 disabled={lightboxIndex === 0}
-                className="absolute left-4 md:left-8 p-3 bg-slate-800/80 hover:bg-cyan-600 rounded-full text-white transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-800/80"
+                className="absolute left-4 md:left-8 p-3 bg-white/10 border border-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white/10"
               >
                 <ChevronLeft className="h-8 w-8" />
               </button>
@@ -392,18 +338,18 @@ export default function InspectorPage() {
                 <img 
                   src={lightboxImages[lightboxIndex].url} 
                   alt={lightboxImages[lightboxIndex].title}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-opacity duration-300"
+                  className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl transition-opacity duration-300"
                 />
               </div>
               
-              <div className="absolute bottom-6 bg-slate-900/60 backdrop-blur-md px-4 py-2 rounded-full border border-slate-700">
-                <p className="text-slate-300 font-medium tracking-widest">{lightboxIndex + 1} / {lightboxImages.length}</p>
+              <div className="absolute bottom-6 bg-black/60 backdrop-blur-md px-6 py-2 rounded-full border border-white/10">
+                <p className="text-white/70 font-mono tracking-widest text-sm">{lightboxIndex + 1} / {lightboxImages.length}</p>
               </div>
 
               <button 
                 onClick={() => setLightboxIndex(prev => prev + 1)}
                 disabled={lightboxIndex === lightboxImages.length - 1}
-                className="absolute right-4 md:right-8 p-3 bg-slate-800/80 hover:bg-cyan-600 rounded-full text-white transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-slate-800/80"
+                className="absolute right-4 md:right-8 p-3 bg-white/10 border border-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-white/10"
               >
                 <ChevronRight className="h-8 w-8" />
               </button>
