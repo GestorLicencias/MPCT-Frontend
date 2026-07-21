@@ -136,7 +136,7 @@ export default function InspectorPage() {
       {/* Background Ambience */}
       <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-      <div className="flex justify-between items-center bg-[#030303] border border-white/10 p-6 rounded-3xl shadow-2xl relative z-10">
+      <div className="flex justify-between items-center bg-[#030303] border border-white/10 p-6 rounded-3xl shadow-2xl relative z-50">
         <h2 className="text-2xl font-bold text-white tracking-tight">Bandeja de Inspector</h2>
         <div className="flex items-center gap-3">
           <div className="relative">
