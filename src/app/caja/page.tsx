@@ -9,6 +9,8 @@ import * as z from "zod";
 import { toast } from "sonner";
 import api from "@/lib/axios";
 
+import { FileCheck } from "lucide-react";
+import { ValidarPagosCajero } from "@/components/ValidarPagosCajero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +51,7 @@ export default function CajaPage() {
   const router = useRouter();
   const [estadoCaja, setEstadoCaja] = useState<CajaEstado | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("estado");
+  const [activeTab, setActiveTab] = useState<"estado" | "cobro" | "validar" | "alertas">("estado");
   const [mostrarFormAbrir, setMostrarFormAbrir] = useState(false);
 
   const [tramite, setTramite] = useState<any>(null);
@@ -353,6 +355,12 @@ export default function CajaPage() {
             <Receipt className="w-5 h-5" /> Cobro Presencial
           </button>
           <button 
+            onClick={() => setActiveTab("validar")}
+            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "validar" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+          >
+            <FileCheck className="w-5 h-5" /> Validar Pagos
+          </button>
+          <button 
             onClick={() => { setActiveTab("alertas"); fetchAlertas(); }}
             className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "alertas" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
           >
@@ -637,6 +645,10 @@ export default function CajaPage() {
                 </CardContent>
               </Card>
             </div>
+          )}
+
+          {activeTab === "validar" && (
+            <ValidarPagosCajero />
           )}
 
           {activeTab === "alertas" && (

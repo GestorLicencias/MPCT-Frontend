@@ -7,7 +7,8 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, LogOut, Save, Eye, UserPlus, CreditCard, Key, Shield, BarChart3, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Settings, UserPlus, CreditCard, BarChart3, Key, LogOut, Eye, Building2, Loader2, Play } from "lucide-react";
+import { ValidarPagosAdmin } from "@/components/ValidarPagosAdmin";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -84,7 +85,7 @@ export default function AdminPage() {
       <aside className="w-72 bg-[#030303] border-r border-white/5 flex flex-col z-20 shrink-0">
         <div className="p-8 border-b border-white/5">
           <h2 className="text-xl font-bold text-white flex items-center gap-3 tracking-tight">
-            <Shield className="text-white w-6 h-6" /> Administrador
+            <Settings className="text-white w-6 h-6" /> Administrador
           </h2>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-2 mt-4">
@@ -167,7 +168,7 @@ export default function AdminPage() {
                             handleUpdate(conf.clave, input.value);
                           }}
                         >
-                          {saving === conf.clave ? "Guardando..." : <><Save className="mr-2 h-5 w-5" /> Guardar Cambios</>}
+                          {saving === conf.clave ? "Guardando..." : <><LogOut className="mr-2 h-5 w-5" /> Guardar Cambios</>}
                         </Button>
                       </div>
                     ))}
@@ -243,7 +244,7 @@ export default function AdminPage() {
           
           {activeTab === "pagos" && (
             <div className="relative z-10">
-              <ValidacionPagosSection />
+              <ValidarPagosAdmin />
             </div>
           )}
 
@@ -355,113 +356,6 @@ function ReporteCierresSection() {
   );
 }
 
-function ValidacionPagosSection() {
-  const [pagos, setPagos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedVoucher, setSelectedVoucher] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchPagos();
-  }, []);
-
-  const fetchPagos = async () => {
-    try {
-      const res = await api.get("/admin/pagos/pendientes");
-      setPagos(res.data);
-    } catch (error) {
-      console.error("Error fetching pagos", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const validarPago = async (id: string, aprobado: boolean) => {
-    try {
-      await api.post(`/admin/pagos/${id}/validar?aprobado=${aprobado}`);
-      toast.success(`Pago ${aprobado ? 'Aprobado' : 'Rechazado'} correctamente.`);
-      fetchPagos();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error al procesar el pago.");
-    }
-  };
-
-  const handleViewVoucher = async (id: string) => {
-    try {
-      const response = await api.get(`/admin/pagos/${id}/voucher`, { responseType: "blob" });
-      const url = URL.createObjectURL(response.data);
-      setSelectedVoucher(url);
-    } catch (error) {
-      console.error("Error fetching voucher image", error);
-      toast.error("No se pudo cargar la imagen del voucher.");
-    }
-  };
-
-  return (
-    <>
-      <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl overflow-hidden">
-        <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
-          <CardTitle className="text-white text-2xl tracking-tight">Validación de Pagos (Banco de la Nación)</CardTitle>
-          <CardDescription className="text-white/50">Apruebe o rechace los vouchers de pago subidos por los solicitantes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center text-white/40 py-10">Cargando pagos pendientes...</div>
-          ) : pagos.length === 0 ? (
-            <div className="text-center text-white/40 py-10">No hay pagos pendientes de validación.</div>
-          ) : (
-            <div className="space-y-4">
-              {pagos.map((pago) => (
-                <div key={pago.id} className="bg-[#030303] p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 hover:border-white/10 transition-colors">
-                  <div className="flex-1 w-full space-y-1">
-                    <h4 className="font-semibold text-white">Trámite RUC: {pago.rucTramite}</h4>
-                    <p className="text-sm text-white/40">{pago.razonSocial}</p>
-                    <p className="text-xs text-white/50 font-mono">Monto a verificar: S/ {pago.monto.toFixed(2)}</p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <Button 
-                      variant="outline" 
-                      className="bg-black border-white/10 text-white hover:bg-white/5 rounded-xl"
-                      onClick={() => handleViewVoucher(pago.id)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" /> Ver Voucher
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-xl"
-                      onClick={() => validarPago(pago.id, false)}
-                    >
-                      Rechazar
-                    </Button>
-                    <Button 
-                      className="bg-white text-black font-semibold hover:bg-white/90 rounded-xl"
-                      onClick={() => validarPago(pago.id, true)}
-                    >
-                      Aprobar
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Dialog open={!!selectedVoucher} onOpenChange={(open) => !open && setSelectedVoucher(null)}>
-        <DialogContent className="max-w-3xl bg-[#080808] border-white/10 text-white rounded-3xl">
-          <DialogHeader>
-            <DialogTitle>Visualización del Voucher</DialogTitle>
-            <DialogDescription className="text-white/50">Verifique los datos de la transferencia antes de aprobar o rechazar.</DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center bg-black rounded-2xl overflow-hidden min-h-[300px] border border-white/5">
-            {selectedVoucher && (
-              <img src={selectedVoucher} alt="Voucher de pago" className="max-h-[70vh] object-contain w-full" />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "La contraseña actual es requerida"),
