@@ -62,7 +62,14 @@ export default function CajaPage() {
   const [cargandoAlertas, setCargandoAlertas] = useState(false);
   const [enviandoRecordatorio, setEnviandoRecordatorio] = useState<string | null>(null);
 
-  const [detallesPago, setDetallesPago] = useState<PagoDetalle[]>([]);
+  const [modoPago, setModoPago] = useState<"UNICO" | "HIBRIDO">("UNICO");
+  const [metodoUnico, setMetodoUnico] = useState<MetodoPago>("EFECTIVO");
+  const [metodoHibrido, setMetodoHibrido] = useState<"EFECTIVO_YAPE" | "EFECTIVO_TARJETA">("EFECTIVO_YAPE");
+  
+  const [montoEfectivo, setMontoEfectivo] = useState("");
+  const [montoEntregadoEfectivo, setMontoEntregadoEfectivo] = useState("");
+  const [referenciaUnico, setReferenciaUnico] = useState("");
+  const [referenciaHibrido, setReferenciaHibrido] = useState("");
 
   const formAbrir = useForm<z.infer<typeof abrirCajaSchema>>({
     resolver: zodResolver(abrirCajaSchema),
@@ -95,18 +102,15 @@ export default function CajaPage() {
       const res = await api.get(`/tramites/${ruc}`);
       setTramite(res.data);
       // Auto-inicializar con 1 pago de efectivo por el total
-      if (res.data && res.data.estado === 'PENDIENTE_PAGO') {
-        setDetallesPago([{
-          id: Math.random().toString(),
-          metodo: "EFECTIVO",
-          monto: res.data.montoCobrado.toString(),
-          montoEntregado: "",
-          referencia: ""
-        }]);
+        setModoPago("UNICO");
+        setMetodoUnico("EFECTIVO");
+        setMontoEfectivo("");
+        setMontoEntregadoEfectivo("");
+        setReferenciaUnico("");
+        setReferenciaHibrido("");
       }
     } catch (error) {
       setTramite(null);
-      setDetallesPago([]);
     } finally {
       setBuscando(false);
     }
@@ -186,28 +190,6 @@ export default function CajaPage() {
     }
   };
 
-  const agregarMetodoPago = () => {
-    setDetallesPago([...detallesPago, {
-      id: Math.random().toString(),
-      metodo: "EFECTIVO",
-      monto: "",
-      montoEntregado: "",
-      referencia: ""
-    }]);
-  };
-
-  const removerMetodoPago = (id: string) => {
-    setDetallesPago(detallesPago.filter(d => d.id !== id));
-  };
-
-  const actualizarDetalle = (id: string, campo: keyof PagoDetalle, valor: string) => {
-    setDetallesPago(detallesPago.map(d => d.id === id ? { ...d, [campo]: valor } : d));
-  };
-
-  const calcularSumaPagos = () => {
-    return detallesPago.reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
-  };
-
   const handlePago = async (values: z.infer<typeof pagoSchema>) => {
     if (!tramite) {
       toast.error("Por favor espere a que se cargue el trámite");
@@ -218,43 +200,78 @@ export default function CajaPage() {
       return;
     }
 
-    const sumaTotal = calcularSumaPagos();
-    if (Math.abs(sumaTotal - tramite.montoCobrado) > 0.01) {
-      toast.error("La suma de los pagos debe ser exactamente S/ " + tramite.montoCobrado.toFixed(2));
-      return;
-    }
+    const payloadDetalles: any[] = [];
 
-    // Validar montos entregados si es efectivo, y referencias para el resto
-    for (const det of detallesPago) {
-      if (det.metodo === "EFECTIVO") {
-        if (parseFloat(det.montoEntregado || "0") < parseFloat(det.monto)) {
-          toast.error("El monto entregado en efectivo es menor al monto a pagar");
+    if (modoPago === "UNICO") {
+      if (metodoUnico === "EFECTIVO") {
+        if (!montoEntregadoEfectivo || parseFloat(montoEntregadoEfectivo) < tramite.montoCobrado) {
+          toast.error("El monto entregado en efectivo debe ser mayor o igual al monto a pagar");
           return;
         }
+        payloadDetalles.push({
+          metodo: "EFECTIVO",
+          monto: tramite.montoCobrado,
+          montoEntregado: parseFloat(montoEntregadoEfectivo),
+          referencia: null
+        });
       } else {
-        if (!det.referencia || det.referencia.trim() === "") {
-          toast.error(`El método ${det.metodo} requiere un código de referencia o número de operación`);
+        if (!referenciaUnico || referenciaUnico.trim() === "") {
+          toast.error("Requiere un código de referencia o número de operación");
           return;
         }
+        payloadDetalles.push({
+          metodo: metodoUnico,
+          monto: tramite.montoCobrado,
+          montoEntregado: null,
+          referencia: referenciaUnico.trim()
+        });
       }
+    } else {
+      // HIBRIDO
+      const mEfectivo = parseFloat(montoEfectivo);
+      if (isNaN(mEfectivo) || mEfectivo <= 0 || mEfectivo >= tramite.montoCobrado) {
+        toast.error("Monto en efectivo inválido para pago dividido");
+        return;
+      }
+      
+      const mSecundario = tramite.montoCobrado - mEfectivo;
+      
+      if (!montoEntregadoEfectivo || parseFloat(montoEntregadoEfectivo) < mEfectivo) {
+        toast.error("El monto entregado en efectivo debe ser mayor o igual a la parte en efectivo");
+        return;
+      }
+      if (!referenciaHibrido || referenciaHibrido.trim() === "") {
+        toast.error("Requiere un código de referencia para el pago digital");
+        return;
+      }
+
+      payloadDetalles.push({
+        metodo: "EFECTIVO",
+        monto: mEfectivo,
+        montoEntregado: parseFloat(montoEntregadoEfectivo),
+        referencia: null
+      });
+
+      payloadDetalles.push({
+        metodo: metodoHibrido === "EFECTIVO_YAPE" ? "YAPE" : "TARJETA",
+        monto: mSecundario,
+        montoEntregado: null,
+        referencia: referenciaHibrido.trim()
+      });
     }
 
     try {
-      const payload = {
+      await api.post("/caja/pago-presencial", {
         ruc: values.ruc,
-        detalles: detallesPago.map(d => ({
-          metodo: d.metodo,
-          monto: parseFloat(d.monto),
-          montoEntregado: d.metodo === 'EFECTIVO' ? parseFloat(d.montoEntregado || d.monto) : null,
-          referencia: d.metodo !== 'EFECTIVO' ? d.referencia : null
-        }))
-      };
-
-      await api.post("/caja/pago-presencial", payload);
+        detalles: payloadDetalles
+      });
       toast.success("Pago registrado correctamente");
       formPago.reset();
       setTramite(null);
-      setDetallesPago([]);
+      setMontoEfectivo("");
+      setMontoEntregadoEfectivo("");
+      setReferenciaUnico("");
+      setReferenciaHibrido("");
       fetchEstadoCaja();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al registrar el pago");
@@ -536,100 +553,149 @@ export default function CajaPage() {
                           <div className="pt-2 border-t border-white/10 mt-2 flex justify-between items-end">
                             <p className="text-2xl font-bold text-cyan-400">Total a Pagar: S/ {tramite.montoCobrado.toFixed(2)}</p>
                             
-                            {/* Sumatorio y validación visual */}
-                            {detallesPago.length > 0 && (
-                              <div className="text-right">
-                                <p className="text-sm text-white/50">Monto Distribuido</p>
-                                <p className={`text-xl font-bold ${Math.abs(calcularSumaPagos() - tramite.montoCobrado) < 0.01 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                  S/ {calcularSumaPagos().toFixed(2)}
-                                </p>
-                              </div>
-                            )}
+                            {/* Sumatorio */}
+                            <div className="text-right">
+                              <p className="text-sm text-white/50">Monto Distribuido</p>
+                              <p className="text-xl font-bold text-emerald-400">
+                                S/ {tramite.montoCobrado.toFixed(2)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )}
                       
                       {tramite && tramite.estado === 'PENDIENTE_PAGO' && (
-                        <div className="space-y-4 pt-4 border-t border-white/10">
-                          <h3 className="text-sm font-mono uppercase tracking-wider text-white/70">Detalles de Pago</h3>
+                        <div className="space-y-6 pt-4 border-t border-white/10">
                           
-                          {detallesPago.map((detalle, index) => (
-                            <div key={detalle.id} className="p-5 bg-[#030303] rounded-2xl border border-white/10 space-y-4">
-                              <div className="flex items-center justify-between">
-                                <span className="font-semibold text-cyan-400 flex items-center gap-2">
-                                  {detalle.metodo === 'EFECTIVO' ? <Banknote className="w-4 h-4"/> : 
-                                   detalle.metodo === 'YAPE' ? <Smartphone className="w-4 h-4"/> : 
-                                   detalle.metodo === 'TARJETA' ? <CreditCard className="w-4 h-4"/> : 
-                                   <DollarSign className="w-4 h-4"/>}
-                                  Pago #{index + 1}
-                                </span>
-                                {detallesPago.length > 1 && (
-                                  <Button type="button" variant="ghost" size="sm" onClick={() => removerMetodoPago(detalle.id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 px-2">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <label className="text-xs text-white/50 mb-1 block">Método</label>
-                                  <select 
-                                    className="w-full h-12 bg-white/5 border border-white/10 text-white rounded-xl px-3 outline-none focus:border-cyan-500/50"
-                                    value={detalle.metodo}
-                                    onChange={(e) => actualizarDetalle(detalle.id, 'metodo', e.target.value)}
-                                  >
-                                    <option value="EFECTIVO" className="bg-black">Efectivo</option>
-                                    <option value="YAPE" className="bg-black">Yape / Plin</option>
-                                    <option value="TARJETA" className="bg-black">Tarjeta / POS</option>
-                                    <option value="TRANSFERENCIA" className="bg-black">Transferencia</option>
-                                  </select>
-                                </div>
-                                <div>
-                                  <label className="text-xs text-white/50 mb-1 block">Monto a Cobrar (S/)</label>
-                                  <Input 
-                                    type="number" step="0.01" 
-                                    value={detalle.monto} 
-                                    onChange={e => actualizarDetalle(detalle.id, 'monto', e.target.value)} 
-                                    className="h-12 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-cyan-500/50"
-                                    placeholder="0.00"
-                                  />
+                          <div className="flex gap-4 p-1 bg-white/5 rounded-xl">
+                            <button
+                              type="button"
+                              className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-colors ${modoPago === 'UNICO' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                              onClick={() => setModoPago("UNICO")}
+                            >
+                              Pago Único
+                            </button>
+                            <button
+                              type="button"
+                              className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-colors ${modoPago === 'HIBRIDO' ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+                              onClick={() => setModoPago("HIBRIDO")}
+                            >
+                              Pago Híbrido (Dividido)
+                            </button>
+                          </div>
+
+                          {modoPago === "UNICO" ? (
+                            <div className="p-6 bg-[#030303] rounded-2xl border border-white/10 space-y-6">
+                              <div>
+                                <label className="text-xs text-white/50 mb-3 block uppercase tracking-wider font-mono">Seleccione Método de Pago</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {["EFECTIVO", "YAPE", "TARJETA", "TRANSFERENCIA"].map(met => (
+                                    <label key={met} className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-colors ${metodoUnico === met ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' : 'border-white/10 text-white/60 hover:border-white/30 hover:bg-white/5'}`}>
+                                      <input type="radio" className="hidden" checked={metodoUnico === met} onChange={() => setMetodoUnico(met as any)} />
+                                      {met === 'EFECTIVO' ? <Banknote className="w-4 h-4"/> : met === 'YAPE' ? <Smartphone className="w-4 h-4"/> : met === 'TARJETA' ? <CreditCard className="w-4 h-4"/> : <DollarSign className="w-4 h-4"/>}
+                                      <span className="text-sm font-medium">{met === 'YAPE' ? 'Yape/Plin' : met === 'TARJETA' ? 'Tarjeta/POS' : met === 'TRANSFERENCIA' ? 'Transferencia' : 'Efectivo'}</span>
+                                    </label>
+                                  ))}
                                 </div>
                               </div>
 
-                              {detalle.metodo === 'EFECTIVO' ? (
+                              {metodoUnico === "EFECTIVO" ? (
                                 <div>
-                                  <label className="text-xs text-cyan-400 mb-1 block">Monto Entregado por Cliente (S/) - Para calcular vuelto</label>
+                                  <label className="text-xs text-cyan-400 mb-2 block font-mono uppercase tracking-wider">Monto Entregado por Cliente (S/)</label>
                                   <Input 
                                     type="number" step="0.01" 
-                                    value={detalle.montoEntregado} 
-                                    onChange={e => actualizarDetalle(detalle.id, 'montoEntregado', e.target.value)} 
-                                    className="h-12 bg-cyan-500/5 border-cyan-500/30 text-white rounded-xl focus-visible:ring-cyan-500/50"
+                                    value={montoEntregadoEfectivo} 
+                                    onChange={e => setMontoEntregadoEfectivo(e.target.value)} 
+                                    className="h-14 bg-cyan-500/5 border-cyan-500/30 text-white text-lg rounded-xl focus-visible:ring-cyan-500/50"
                                     placeholder="0.00"
                                   />
-                                  {parseFloat(detalle.montoEntregado) > parseFloat(detalle.monto) && (
-                                    <p className="text-xs text-emerald-400 mt-2">
-                                      Vuelto: S/ {(parseFloat(detalle.montoEntregado) - parseFloat(detalle.monto)).toFixed(2)}
+                                  {parseFloat(montoEntregadoEfectivo) >= tramite.montoCobrado && (
+                                    <p className="text-sm text-emerald-400 mt-2 font-semibold">
+                                      Vuelto: S/ {(parseFloat(montoEntregadoEfectivo) - tramite.montoCobrado).toFixed(2)}
                                     </p>
                                   )}
                                 </div>
                               ) : (
                                 <div>
-                                  <label className="text-xs text-amber-400 mb-1 block">Código de Referencia / Nro Operación</label>
+                                  <label className="text-xs text-amber-400 mb-2 block font-mono uppercase tracking-wider">Código de Referencia / Nro Operación</label>
                                   <Input 
                                     type="text" 
-                                    value={detalle.referencia || ''} 
-                                    onChange={e => actualizarDetalle(detalle.id, 'referencia', e.target.value)} 
-                                    className="h-12 bg-amber-500/5 border-amber-500/30 text-white rounded-xl focus-visible:ring-amber-500/50"
+                                    value={referenciaUnico} 
+                                    onChange={e => setReferenciaUnico(e.target.value)} 
+                                    className="h-14 bg-amber-500/5 border-amber-500/30 text-white rounded-xl focus-visible:ring-amber-500/50"
                                     placeholder="Ej. 123456789"
                                   />
                                 </div>
                               )}
                             </div>
-                          ))}
+                          ) : (
+                            <div className="p-6 bg-[#030303] rounded-2xl border border-white/10 space-y-6">
+                              <div>
+                                <label className="text-xs text-white/50 mb-3 block uppercase tracking-wider font-mono">Seleccione Combinación</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <label className={`flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-colors ${metodoHibrido === 'EFECTIVO_YAPE' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' : 'border-white/10 text-white/60 hover:border-white/30 hover:bg-white/5'}`}>
+                                    <input type="radio" className="hidden" checked={metodoHibrido === 'EFECTIVO_YAPE'} onChange={() => setMetodoHibrido('EFECTIVO_YAPE')} />
+                                    <span className="text-sm font-semibold">Efectivo + Yape</span>
+                                  </label>
+                                  <label className={`flex items-center justify-center gap-2 p-4 border rounded-xl cursor-pointer transition-colors ${metodoHibrido === 'EFECTIVO_TARJETA' ? 'border-cyan-500 bg-cyan-500/10 text-cyan-400' : 'border-white/10 text-white/60 hover:border-white/30 hover:bg-white/5'}`}>
+                                    <input type="radio" className="hidden" checked={metodoHibrido === 'EFECTIVO_TARJETA'} onChange={() => setMetodoHibrido('EFECTIVO_TARJETA')} />
+                                    <span className="text-sm font-semibold">Efectivo + Tarjeta</span>
+                                  </label>
+                                </div>
+                              </div>
 
-                          <Button type="button" variant="outline" onClick={agregarMetodoPago} className="w-full h-12 border-white/10 border-dashed text-white/70 hover:bg-white/5 hover:text-white rounded-xl">
-                            <Plus className="w-4 h-4 mr-2" /> Agregar Pago Dividido
-                          </Button>
+                              <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-xs text-white/50 mb-2 block font-mono uppercase tracking-wider">Parte en Efectivo (S/)</label>
+                                    <Input 
+                                      type="number" step="0.01" 
+                                      value={montoEfectivo} 
+                                      onChange={e => setMontoEfectivo(e.target.value)} 
+                                      className="h-12 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-cyan-500/50"
+                                      placeholder="0.00"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-cyan-400 mb-2 block font-mono uppercase tracking-wider">Monto Entregado Cliente (S/)</label>
+                                    <Input 
+                                      type="number" step="0.01" 
+                                      value={montoEntregadoEfectivo} 
+                                      onChange={e => setMontoEntregadoEfectivo(e.target.value)} 
+                                      className="h-12 bg-cyan-500/5 border-cyan-500/30 text-white rounded-xl focus-visible:ring-cyan-500/50"
+                                      placeholder="0.00"
+                                    />
+                                    {parseFloat(montoEfectivo) > 0 && parseFloat(montoEntregadoEfectivo) >= parseFloat(montoEfectivo) && (
+                                      <p className="text-sm text-emerald-400 mt-2 font-semibold">
+                                        Vuelto: S/ {(parseFloat(montoEntregadoEfectivo) - parseFloat(montoEfectivo)).toFixed(2)}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="text-xs text-white/50 mb-2 block font-mono uppercase tracking-wider">Parte en {metodoHibrido === 'EFECTIVO_YAPE' ? 'Yape' : 'Tarjeta'} (S/)</label>
+                                    <div className="h-12 bg-white/5 border border-white/10 text-white/70 rounded-xl px-4 flex items-center cursor-not-allowed">
+                                      {parseFloat(montoEfectivo) > 0 && parseFloat(montoEfectivo) < tramite.montoCobrado 
+                                        ? (tramite.montoCobrado - parseFloat(montoEfectivo)).toFixed(2) 
+                                        : "0.00"}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-xs text-amber-400 mb-2 block font-mono uppercase tracking-wider">Ref / Operación {metodoHibrido === 'EFECTIVO_YAPE' ? 'Yape' : 'Tarjeta'}</label>
+                                    <Input 
+                                      type="text" 
+                                      value={referenciaHibrido} 
+                                      onChange={e => setReferenciaHibrido(e.target.value)} 
+                                      className="h-12 bg-amber-500/5 border-amber-500/30 text-white rounded-xl focus-visible:ring-amber-500/50"
+                                      placeholder="Ej. 123456789"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
 
