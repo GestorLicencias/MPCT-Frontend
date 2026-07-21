@@ -115,6 +115,7 @@ export default function SolicitarPage() {
       if (values.email) formData.append("email", values.email);
       formData.append("representanteLegal", values.representanteLegal);
       formData.append("rubro", values.rubro === "Otros" ? values.rubroOtro! : values.rubro);
+      if (values.domicilioFiscal) formData.append("direccion", values.domicilioFiscal);
       formData.append("area", values.area || "0");
       formData.append("tipo", values.tipo);
       if (!isRenovacion && values.plano && values.plano[0]) {
@@ -212,13 +213,12 @@ export default function SolicitarPage() {
                 name="domicilioFiscal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Domicilio Fiscal (Obtenido de SUNAT)</FormLabel>
+                    <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Dirección del Establecimiento (Obtenido de SUNAT, editable)</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="La dirección aparecerá automáticamente al validar el RUC" 
+                        placeholder="Ej. Av. Los Incas 123" 
                         {...field} 
-                        disabled
-                        className="h-14 bg-white/5 border-white/10 text-white opacity-70 cursor-not-allowed rounded-xl px-4 text-base placeholder:text-white/20"
+                        className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20"
                       />
                     </FormControl>
                     <FormMessage className="text-red-400" />
