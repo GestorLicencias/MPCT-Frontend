@@ -46,6 +46,7 @@ export default function CajaPage() {
   const [estadoCaja, setEstadoCaja] = useState<CajaEstado | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("estado");
+  const [mostrarFormAbrir, setMostrarFormAbrir] = useState(false);
 
   const [tramite, setTramite] = useState<any>(null);
   const [buscando, setBuscando] = useState(false);
@@ -280,30 +281,42 @@ export default function CajaPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-8">
-            <Form {...formAbrir}>
-              <form onSubmit={formAbrir.handleSubmit(handleAbrirCaja)} className="space-y-6 text-left">
-                <FormField
-                  control={formAbrir.control}
-                  name="montoInicial"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Fondo Inicial (S/)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base" />
-                      </FormControl>
-                      <FormMessage className="text-red-400" />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" className="w-full h-14 bg-white hover:bg-white/90 text-black font-semibold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-                  Abrir Caja Ahora
+            {!mostrarFormAbrir ? (
+              <div className="space-y-4">
+                <Button onClick={() => setMostrarFormAbrir(true)} className="w-full h-14 bg-white hover:bg-white/90 text-black font-semibold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                  Abrir Caja
                 </Button>
-                
                 <Button type="button" variant="ghost" onClick={() => { localStorage.removeItem("token"); router.push("/auth/login"); }} className="w-full text-white/50 hover:text-white mt-2">
                   <LogOut className="w-4 h-4 mr-2"/> Cancelar y Salir
                 </Button>
-              </form>
-            </Form>
+              </div>
+            ) : (
+              <Form {...formAbrir}>
+                <form onSubmit={formAbrir.handleSubmit(handleAbrirCaja)} className="space-y-6 text-left">
+                  <FormField
+                    control={formAbrir.control}
+                    name="montoInicial"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Fondo Inicial (S/)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" {...field} className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base" />
+                        </FormControl>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="space-y-4">
+                    <Button type="submit" className="w-full h-14 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+                      Abrir Caja Ahora
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => setMostrarFormAbrir(false)} className="w-full text-white/50 hover:text-white">
+                      Atrás
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            )}
           </CardContent>
         </Card>
       </div>
