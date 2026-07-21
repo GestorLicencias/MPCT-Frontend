@@ -100,10 +100,8 @@ export default function InspectorPage() {
 
   const toggleLock = async (id: string, isLockedByMe: boolean) => {
     try {
-      const token = localStorage.getItem("token");
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
       const endpoint = isLockedByMe ? "unlock" : "lock";
-      await api.post(`/admin/tasks/${id}/${endpoint}`);
+      await api.post(`/inspecciones/${id}/${endpoint}`);
       fetchPendientes();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al procesar la tarea");
