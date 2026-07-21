@@ -59,6 +59,7 @@ export default function CajaPage() {
   const [montoFisico, setMontoFisico] = useState<string>("");
 
   const [alertas, setAlertas] = useState<any[]>([]);
+  const [alertasPagos, setAlertasPagos] = useState<any[]>([]);
   const [cargandoAlertas, setCargandoAlertas] = useState(false);
   const [enviandoRecordatorio, setEnviandoRecordatorio] = useState<string | null>(null);
 
@@ -134,10 +135,14 @@ export default function CajaPage() {
   const fetchAlertas = async () => {
     setCargandoAlertas(true);
     try {
-      const res = await api.get("/caja/licencias-alertas");
-      setAlertas(res.data);
+      const [resLic, resPagos] = await Promise.all([
+        api.get("/caja/licencias-alertas"),
+        api.get("/admin/pagos/pendientes")
+      ]);
+      setAlertas(resLic.data);
+      setAlertasPagos(resPagos.data);
     } catch (error) {
-      toast.error("Error al cargar alertas de licencias");
+      toast.error("Error al cargar alertas");
     } finally {
       setCargandoAlertas(false);
     }
@@ -731,17 +736,45 @@ export default function CajaPage() {
                 </Button>
               </CardHeader>
               <CardContent className="p-8">
-                {cargandoAlertas ? (
-                  <div className="flex justify-center py-10 text-cyan-400 animate-pulse">Cargando alertas...</div>
-                ) : alertas.length === 0 ? (
-                  <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
-                    <Bell className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                    <h3 className="text-xl font-medium text-white mb-2">Sin Alertas Activas</h3>
-                    <p className="text-white/50">Todas las licencias se encuentran vigentes y sin riesgo de expiración cercano.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {alertas.map((alerta, idx) => (
+                  {cargandoAlertas ? (
+                    <div className="flex justify-center py-10 text-cyan-400 animate-pulse">Cargando alertas...</div>
+                  ) : alertas.length === 0 && alertasPagos.length === 0 ? (
+                    <div className="text-center py-12 bg-white/5 rounded-2xl border border-white/5">
+                      <Bell className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                      <h3 className="text-xl font-medium text-white mb-2">Sin Alertas Activas</h3>
+                      <p className="text-white/50">Todas las licencias se encuentran vigentes y no hay pagos pendientes de validar.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {alertasPagos.map((pago, idx) => (
+                        <div key={`pago-${idx}`} className="p-5 rounded-2xl border flex items-center justify-between bg-blue-500/10 border-blue-500/30">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-blue-500/20 text-blue-400">
+                                PAGO PENDIENTE
+                              </span>
+                              <span className="text-white font-semibold">{pago.razonSocial}</span>
+                            </div>
+                            <p className="text-sm text-white/60">
+                              RUC: <span className="text-white">{pago.ruc}</span> | Monto: <span className="text-white">S/ {pago.monto}</span>
+                            </p>
+                            <p className="text-xs text-white/40 mt-1">
+                              Fecha de Pago: {new Date(pago.fechaPago).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end gap-3">
+                            <Button 
+                              onClick={() => setActiveTab("validar")}
+                              variant="outline" 
+                              size="sm"
+                              className="border-white/10 hover:bg-blue-500/20 text-blue-300 h-8 px-3 rounded-lg"
+                            >
+                              <span className="flex items-center gap-2"><FileCheck className="w-3 h-3" /> Ir a Validar</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {alertas.map((alerta, idx) => (
                       <div key={idx} className={`p-5 rounded-2xl border flex items-center justify-between ${alerta.estado === 'VENCIDA' ? 'bg-red-500/10 border-red-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
                         <div className="space-y-1">
                           <div className="flex items-center gap-3">

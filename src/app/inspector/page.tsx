@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Image as ImageIcon, CheckCircle, XCircle, LogOut, ChevronLeft, ChevronRight, Eye, Bell } from "lucide-react";
+import { FileText, Image as ImageIcon, CheckCircle, XCircle, LogOut, ChevronLeft, ChevronRight, Eye, Bell, Lock, Unlock } from "lucide-react";
 
 export default function InspectorPage() {
   const router = useRouter();
@@ -22,8 +22,17 @@ export default function InspectorPage() {
   const [lightboxImages, setLightboxImages] = useState<{url: string, title: string}[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [soloHoy, setSoloHoy] = useState(true);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setCurrentUserEmail(payload.sub);
+      } catch (e) {}
+    }
     fetchPendientes();
   }, [soloHoy]);
 
@@ -89,6 +98,19 @@ export default function InspectorPage() {
     }
   };
 
+  const toggleLock = async (id: string, isLockedByMe: boolean) => {
+    try {
+      const token = localStorage.getItem("token");
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+      const endpoint = isLockedByMe ? "unlock" : "lock";
+      await api.post(`/admin/tasks/${id}/${endpoint}`);
+      fetchPendientes();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error al procesar la tarea");
+      fetchPendientes();
+    }
+  };
+
   const getAvailableImages = () => {
     if (!selected || !selected.tramiteObj) return [];
     const images = [];
@@ -119,14 +141,39 @@ export default function InspectorPage() {
       <div className="flex justify-between items-center bg-[#030303] border border-white/10 p-6 rounded-3xl shadow-2xl relative z-10">
         <h2 className="text-2xl font-bold text-white tracking-tight">Bandeja de Inspector</h2>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl relative">
-            <Bell className="h-4 w-4" />
-            {inspecciones.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {inspecciones.length}
-              </span>
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-4 w-4" />
+              {inspecciones.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {inspecciones.length}
+                </span>
+              )}
+            </Button>
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-72 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="p-3 border-b border-white/10 bg-[#222]">
+                  <h3 className="font-semibold text-white">Notificaciones</h3>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {inspecciones.length > 0 ? (
+                    inspecciones.map((insp, idx) => (
+                      <div key={idx} className="p-3 border-b border-white/5 hover:bg-white/5 cursor-pointer text-sm" onClick={() => { setSelected(insp); setShowNotifications(false); }}>
+                        <p className="text-white font-medium">Nueva inspección</p>
+                        <p className="text-white/50 text-xs mt-1">RUC: {insp.tramite.ruc}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-white/50 text-sm">No hay notificaciones</div>
+                  )}
+                </div>
+              </div>
             )}
-          </Button>
+          </div>
           <Button variant="outline" onClick={handleLogout} className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl">
             <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
           </Button>
@@ -189,9 +236,28 @@ export default function InspectorPage() {
                         <Badge variant="secondary" className="bg-white/5 text-white/70 border-white/10 rounded-lg font-mono text-[10px] uppercase tracking-wider">{item.displayRubro}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button onClick={() => setSelected(item)} className="bg-white text-black hover:bg-white/90 rounded-xl font-semibold shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                          Evaluar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          {item.lockedBy ? (
+                            item.lockedBy === currentUserEmail ? (
+                              <>
+                                <Button onClick={() => setSelected(item)} className="bg-white text-black hover:bg-white/90 rounded-xl font-semibold shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                                  Evaluar
+                                </Button>
+                                <Button onClick={() => toggleLock(item.id, true)} variant="ghost" className="text-white/50 hover:text-white px-2">
+                                  <Unlock className="w-4 h-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <div className="flex items-center px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+                                <Lock className="w-4 h-4 mr-2" /> En proceso por {item.lockedBy}
+                              </div>
+                            )
+                          ) : (
+                            <Button onClick={() => toggleLock(item.id, false)} className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                              Tomar Tarea
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
