@@ -26,6 +26,12 @@ export function UsuariosAdminSection() {
   const [motivoSuspension, setMotivoSuspension] = useState("");
   const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
 
+  // Reset Password Modal State
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [selectedUserForReset, setSelectedUserForReset] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -77,6 +83,26 @@ export function UsuariosAdminSection() {
     }
     await ejecutarCambioEstado(selectedUserForSuspension, false, motivoSuspension.trim());
     setSuspensionModalOpen(false);
+  };
+
+  const confirmarResetPassword = async () => {
+    if (newPassword.trim().length < 6) {
+      toast.error("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    setIsSubmittingPassword(true);
+    try {
+      const res = await api.patch(`/admin/usuarios/${selectedUserForReset.id}/password`, { 
+        newPassword: newPassword
+      });
+      toast.success(res.data.message || "Contraseña de usuario actualizada exitosamente.");
+      setResetModalOpen(false);
+      setNewPassword("");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error al cambiar la contraseña.");
+    } finally {
+      setIsSubmittingPassword(false);
+    }
   };
 
   const ejecutarCambioEstado = async (user: any, newStatus: boolean, motivo: string) => {
@@ -185,14 +211,29 @@ export function UsuariosAdminSection() {
                   </div>
                   
                   {u.role !== 'ADMIN' && (
-                    <Button 
-                      type="button"
-                      variant="outline" 
-                      onClick={() => toggleStatus(u)}
-                      className={`h-12 px-6 rounded-xl border ${u.isActive ? 'border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'}`}
-                    >
-                      {u.isActive ? "Suspender Usuario" : "Reactivar Usuario"}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        onClick={() => {
+                          setSelectedUserForReset(u);
+                          setNewPassword("");
+                          setResetModalOpen(true);
+                        }}
+                        className="h-12 px-4 rounded-xl border border-blue-500/30 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300"
+                        title="Cambiar Contraseña"
+                      >
+                        <Key className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        onClick={() => toggleStatus(u)}
+                        className={`h-12 px-6 rounded-xl border ${u.isActive ? 'border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300'}`}
+                      >
+                        {u.isActive ? "Suspender Usuario" : "Reactivar Usuario"}
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -233,6 +274,44 @@ export function UsuariosAdminSection() {
             </Button>
             <Button onClick={confirmarSuspension} disabled={!motivoSuspension.trim() || isSubmittingStatus} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-xl">
               {isSubmittingStatus ? "Guardando..." : "Confirmar Suspensión"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Modal */}
+      <Dialog open={resetModalOpen} onOpenChange={setResetModalOpen}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-blue-400">Cambiar Contraseña</DialogTitle>
+            <DialogDescription className="text-white/50">
+              Ingrese la nueva contraseña para el usuario seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {selectedUserForReset && (
+              <div className="bg-white/5 p-3 rounded-lg border border-white/10 text-sm">
+                <span className="text-white/50">Usuario: </span>
+                <strong className="text-white">{selectedUserForReset.email}</strong>
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-2">Nueva Contraseña</label>
+              <Input 
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                className="bg-black border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-blue-500/50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetModalOpen(false)} className="border-white/10 text-white hover:bg-white/5 rounded-xl">
+              Cancelar
+            </Button>
+            <Button onClick={confirmarResetPassword} disabled={newPassword.length < 6 || isSubmittingPassword} className="bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 border border-blue-500/20 rounded-xl">
+              {isSubmittingPassword ? "Guardando..." : "Confirmar Cambio"}
             </Button>
           </DialogFooter>
         </DialogContent>
