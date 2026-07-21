@@ -88,6 +88,11 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base"
               />
+              <div className="flex justify-end mt-2">
+                <Link href="/auth/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
             </div>
             <Button type="submit" disabled={loading} className="w-full h-14 bg-white hover:bg-white/90 text-black font-semibold text-lg rounded-xl transition-all mt-6">
               {loading ? "Verificando..." : "Ingresar al Sistema"}

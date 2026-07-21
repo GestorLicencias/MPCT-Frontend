@@ -23,6 +23,7 @@ const formSchema = z.object({
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
   email: z.string().email({ message: "Ingrese un correo electrónico válido." }).optional().or(z.literal("")),
   rubro: z.string().min(2, { message: "Seleccione el rubro." }),
+  rubroOtro: z.string().optional(),
   area: z.string().optional(),
   tipo: z.enum(["NUEVO", "RENOVACION", "MODIFICACION", "TRASLADO"]),
   plano: z.any().optional()
@@ -34,6 +35,9 @@ const formSchema = z.object({
     if (!data.plano || data.plano.length !== 1) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar el plano en formato PDF o Imagen.", path: ["plano"] });
     }
+  }
+  if (data.rubro === "Otros" && (!data.rubroOtro || data.rubroOtro.length < 2)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Especifique el rubro del negocio.", path: ["rubroOtro"] });
   }
 });
 
@@ -51,6 +55,7 @@ export default function SolicitarPage() {
       email: "",
       representanteLegal: "",
       rubro: "",
+      rubroOtro: "",
       area: "",
       tipo: "NUEVO",
     },
@@ -73,11 +78,15 @@ export default function SolicitarPage() {
         return;
       }
       
-      if (data.dniGerente) form.setValue("dni", data.dniGerente);
-      if (data.nombreGerente) form.setValue("representanteLegal", data.nombreGerente);
+      if (data.dniGerente) {
+        form.setValue("dni", data.dniGerente);
+        form.setValue("representanteLegal", data.nombreGerente);
+        toast.success(data.mensaje || "RUC validado: Empresa activa y habida.");
+      } else {
+        toast.warning(data.mensaje || "RUC Válido. Inserte manualmente los datos del representante.");
+      }
       
       setIsRucValid(true);
-      toast.success("RUC validado: Empresa activa y habida.");
     } catch (error: any) {
       console.error("RUC validation error:", error);
       const msg = error.response?.data?.message || "Error al validar el RUC. Intente nuevamente.";
@@ -96,7 +105,7 @@ export default function SolicitarPage() {
       formData.append("dni", values.dni);
       if (values.email) formData.append("email", values.email);
       formData.append("representanteLegal", values.representanteLegal);
-      formData.append("rubro", values.rubro);
+      formData.append("rubro", values.rubro === "Otros" ? values.rubroOtro! : values.rubro);
       formData.append("area", values.area || "0");
       formData.append("tipo", values.tipo);
       if (!isRenovacion && values.plano && values.plano[0]) {
@@ -271,6 +280,22 @@ export default function SolicitarPage() {
                     </FormItem>
                   )}
                 />
+
+                {form.watch("rubro") === "Otros" && (
+                  <FormField
+                    control={form.control}
+                    name="rubroOtro"
+                    render={({ field }) => (
+                      <FormItem className="col-span-1 md:col-span-2">
+                        <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Especifique el Rubro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ej. Agencia de Viajes" {...field} className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20" />
+                        </FormControl>
+                        <FormMessage className="text-red-400" />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
