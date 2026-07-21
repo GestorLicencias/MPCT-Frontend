@@ -22,6 +22,7 @@ const formSchema = z.object({
   dni: z.string().length(8, { message: "El DNI debe tener 8 dígitos exactos." }),
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
   email: z.string().email({ message: "Ingrese un correo electrónico válido." }).optional().or(z.literal("")),
+  domicilioFiscal: z.string().optional(),
   rubro: z.string().min(2, { message: "Seleccione el rubro." }),
   rubroOtro: z.string().optional(),
   area: z.string().optional(),
@@ -54,6 +55,7 @@ export default function SolicitarPage() {
       ruc: "",
       dni: "",
       email: "",
+      domicilioFiscal: "",
       representanteLegal: "",
       rubro: "",
       rubroOtro: "",
@@ -77,6 +79,10 @@ export default function SolicitarPage() {
       if (!data.valido) {
         form.setError("ruc", { type: "manual", message: data.mensaje || "RUC inválido." });
         return;
+      }
+      
+      if (data.domicilioFiscal) {
+        form.setValue("domicilioFiscal", data.domicilioFiscal);
       }
       
       if (data.dniGerente) {
@@ -200,6 +206,25 @@ export default function SolicitarPage() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="domicilioFiscal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Domicilio Fiscal (Obtenido de SUNAT)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="La dirección aparecerá automáticamente al validar el RUC" 
+                        {...field} 
+                        disabled
+                        className="h-14 bg-white/5 border-white/10 text-white opacity-70 cursor-not-allowed rounded-xl px-4 text-base placeholder:text-white/20"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400" />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid md:grid-cols-2 gap-8">
                   <FormField
