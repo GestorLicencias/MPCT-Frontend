@@ -40,6 +40,7 @@ const formSchema = z.object({
 export default function SolicitarPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRucValidating, setIsRucValidating] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,6 +54,25 @@ export default function SolicitarPage() {
       tipo: "NUEVO",
     },
   });
+
+  const handleRucBlur = async (ruc: string) => {
+    if (ruc.length !== 11) return;
+    setIsRucValidating(true);
+    form.clearErrors("ruc");
+    try {
+      const response = await axios.get(`${API_URL}/ruc/${ruc}/validar`);
+      const { data } = response;
+      if (data.dniRepresentante) form.setValue("dni", data.dniRepresentante);
+      if (data.representanteLegal) form.setValue("representanteLegal", data.representanteLegal);
+      toast.success("RUC validado: Empresa activa y habida.");
+    } catch (error: any) {
+      console.error("RUC validation error:", error);
+      const msg = error.response?.data?.message || "Error al validar el RUC. Intente nuevamente.";
+      form.setError("ruc", { type: "manual", message: msg });
+    } finally {
+      setIsRucValidating(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     const isRenovacion = values.tipo === "RENOVACION";
@@ -116,13 +136,17 @@ export default function SolicitarPage() {
                   name="ruc"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Número de RUC</FormLabel>
+                      <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50 flex justify-between">
+                        <span>Número de RUC</span>
+                        {isRucValidating && <span className="text-cyan-400 animate-pulse">Validando...</span>}
+                      </FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Ej. 20123456789" 
                           {...field} 
                           onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                          className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20"
+                          onBlur={() => handleRucBlur(field.value)}
+                          className={`h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20 ${form.formState.errors.ruc ? 'border-red-500' : ''}`}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
