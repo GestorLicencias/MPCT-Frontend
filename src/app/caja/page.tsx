@@ -92,7 +92,6 @@ export default function CajaPage() {
       buscarTramite(rucValue);
     } else {
       setTramite(null);
-      setDetallesPago([]);
     }
   }, [rucValue]);
 

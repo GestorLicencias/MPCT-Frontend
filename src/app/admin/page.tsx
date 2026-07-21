@@ -7,8 +7,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, UserPlus, CreditCard, BarChart3, Key, LogOut, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { ValidarPagosAdmin } from "@/components/ValidarPagosAdmin";
+import { Settings, UserPlus, BarChart3, Key, LogOut, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { UsuariosAdminSection } from "@/components/UsuariosAdminSection";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -81,12 +80,7 @@ export default function AdminPage() {
           >
             <UserPlus className="w-5 h-5" /> Usuarios
           </button>
-          <button 
-            onClick={() => setActiveTab("pagos")}
-            className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "pagos" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
-          >
-            <CreditCard className="w-5 h-5" /> Validar Pagos
-          </button>
+
           <button 
             onClick={() => setActiveTab("cierres")}
             className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl transition-all font-medium ${activeTab === "cierres" ? "bg-white text-black" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
@@ -161,18 +155,6 @@ export default function AdminPage() {
           {activeTab === "usuarios" && (
             <div className="relative z-10">
               <UsuariosAdminSection />
-            </div>
-          )}
-
-          {activeTab === "password" && (
-            <div className="relative z-10">
-              <ChangePasswordSection />
-            </div>
-          )}
-          
-          {activeTab === "pagos" && (
-            <div className="relative z-10">
-              <ValidarPagosAdmin />
             </div>
           )}
 
