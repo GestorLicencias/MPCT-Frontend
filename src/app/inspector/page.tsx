@@ -43,8 +43,8 @@ export default function InspectorPage() {
       const mappedInsp = resInsp.data.map((insp: any) => ({
         ...insp,
         isInspeccion: true,
-        sortDate: new Date(insp.createdAt).getTime(),
-        displayDate: insp.createdAt,
+        sortDate: insp.fechaProgramada ? new Date(insp.fechaProgramada).getTime() : new Date(insp.createdAt).getTime(),
+        displayDate: insp.fechaProgramada || insp.createdAt,
         displayRuc: insp.tramite.ruc,
         displayRazon: insp.tramite.razonSocial,
         displayRubro: insp.tramite.rubro,
@@ -52,7 +52,8 @@ export default function InspectorPage() {
         tramiteObj: insp.tramite
       }));
 
-      const combined = mappedInsp.sort((a: any, b: any) => b.sortDate - a.sortDate);
+      // Sort ascending by fechaProgramada (earliest first)
+      const combined = mappedInsp.sort((a: any, b: any) => a.sortDate - b.sortDate);
       setInspecciones(combined);
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 403) {

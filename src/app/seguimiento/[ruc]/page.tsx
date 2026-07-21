@@ -303,7 +303,20 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
         </Card>
       )}
 
-      {tramite.estado === "APROBADO" && (
+      {tramite.estado === "APROBADO" && tramite.estadoLicencia === "VENCIDA" && (
+        <Card className="bg-[#030303] border-red-500/20 shadow-2xl rounded-3xl overflow-hidden mt-6">
+          <CardHeader className="bg-red-500/5 border-b border-red-500/10 p-8">
+            <CardTitle className="text-red-500 flex items-center gap-3 text-2xl tracking-tight">
+              <AlertCircle className="h-8 w-8" /> Licencia Vencida
+            </CardTitle>
+            <CardDescription className="text-red-400/50 mt-2 text-base leading-relaxed">
+              La licencia ya venció. Por favor, inicie su nuevo trámite de renovación desde la página de inicio.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {tramite.estado === "APROBADO" && tramite.estadoLicencia !== "VENCIDA" && (
         <Card className="bg-[#030303] border-green-500/20 shadow-[0_0_40px_rgba(34,197,94,0.05)] rounded-3xl overflow-hidden">
           <CardHeader className="bg-green-500/5 border-b border-green-500/10 p-8 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
             <div>

@@ -153,8 +153,9 @@ export default function CajaPage() {
     try {
       await api.post(`/caja/licencias-alertas/${ruc}/recordatorio`);
       toast.success("Correo de recordatorio enviado exitosamente");
-    } catch (error) {
-      toast.error("Error al enviar el recordatorio");
+      setAlertas((prev) => prev.filter(a => a.ruc !== ruc));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error al enviar el recordatorio");
     } finally {
       setEnviandoRecordatorio(null);
     }
