@@ -284,7 +284,7 @@ export default function CajaPage() {
   const handleLogout = () => {
     if (estadoCaja?.abierta) {
       toast.error("Debes hacer el arqueo y cerrar la caja antes de salir.");
-      router.push("/caja/cierre");
+      setActiveTab("estado");
       return;
     }
     localStorage.removeItem("token");
