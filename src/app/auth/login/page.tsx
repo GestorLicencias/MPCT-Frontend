@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1'}/auth`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mpct-backend-343008001984.us-central1.run.app/api/v1'}/auth`;
 
 export default function LoginPage() {
   const router = useRouter();

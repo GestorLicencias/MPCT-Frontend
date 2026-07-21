@@ -91,7 +91,7 @@ export default function InspectorPage() {
   const getAvailableImages = () => {
     if (!selected || !selected.tramiteObj) return [];
     const images = [];
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://mpct-api-264213836001.us-east1.run.app/api/v1";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://mpct-backend-343008001984.us-central1.run.app/api/v1";
     const tr = selected.tramiteObj;
     if (tr.archivoFotoUrl) images.push({ url: `${baseUrl}/tramites/${tr.ruc}/archivos/foto`, title: "Foto 1" });
     if (tr.archivoFoto2Url) images.push({ url: `${baseUrl}/tramites/${tr.ruc}/archivos/foto2`, title: "Foto 2" });

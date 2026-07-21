@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://mpct-api-264213836001.us-east1.run.app/api/v1",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://mpct-backend-343008001984.us-central1.run.app/api/v1",
 });
 
 api.interceptors.request.use((config) => {

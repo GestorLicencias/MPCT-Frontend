@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CheckCircle2, CheckCircle, Clock, AlertCircle, FileX, CreditCard, UploadCloud, Download, Loader2 } from "lucide-react";
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mpct-api-264213836001.us-east1.run.app/api/v1'}/tramites`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'https://mpct-backend-343008001984.us-central1.run.app/api/v1'}/tramites`;
 
 interface Tramite {
   id: string;

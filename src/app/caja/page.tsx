@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Briefcase, CreditCard, DollarSign, LogOut, Receipt, ExternalLink, Search, Bell, AlertTriangle, Send } from "lucide-react";
+import { Briefcase, CreditCard, DollarSign, LogOut, Receipt, ExternalLink, Search, Bell, AlertTriangle, Send, Plus, Trash2, Smartphone, Banknote } from "lucide-react";
 
 interface CajaEstado {
   cajaId: string | null;
@@ -28,9 +28,18 @@ const abrirCajaSchema = z.object({
 });
 
 const pagoSchema = z.object({
-  ruc: z.string().length(11, { message: "El RUC debe tener 11 dígitos" }),
-  metodoPago: z.enum(["EFECTIVO", "TARJETA"], { required_error: "Seleccione un método de pago" })
+  ruc: z.string().length(11, { message: "El RUC debe tener 11 dígitos" })
 });
+
+type MetodoPago = "EFECTIVO" | "YAPE" | "TARJETA" | "TRANSFERENCIA";
+
+interface PagoDetalle {
+  id: string;
+  metodo: MetodoPago;
+  monto: string;
+  montoEntregado: string;
+  referencia: string;
+}
 
 export default function CajaPage() {
   const router = useRouter();
@@ -40,12 +49,13 @@ export default function CajaPage() {
 
   const [tramite, setTramite] = useState<any>(null);
   const [buscando, setBuscando] = useState(false);
-  const [montoEntregado, setMontoEntregado] = useState<string>("");
   const [montoFisico, setMontoFisico] = useState<string>("");
 
   const [alertas, setAlertas] = useState<any[]>([]);
   const [cargandoAlertas, setCargandoAlertas] = useState(false);
   const [enviandoRecordatorio, setEnviandoRecordatorio] = useState<string | null>(null);
+
+  const [detallesPago, setDetallesPago] = useState<PagoDetalle[]>([]);
 
   const formAbrir = useForm<z.infer<typeof abrirCajaSchema>>({
     resolver: zodResolver(abrirCajaSchema),
@@ -54,11 +64,10 @@ export default function CajaPage() {
 
   const formPago = useForm<z.infer<typeof pagoSchema>>({
     resolver: zodResolver(pagoSchema),
-    defaultValues: { ruc: "", metodoPago: "EFECTIVO" }
+    defaultValues: { ruc: "" }
   });
 
   const rucValue = formPago.watch("ruc");
-  const metodoPago = formPago.watch("metodoPago");
 
   useEffect(() => {
     fetchEstadoCaja();
@@ -69,7 +78,7 @@ export default function CajaPage() {
       buscarTramite(rucValue);
     } else {
       setTramite(null);
-      setMontoEntregado("");
+      setDetallesPago([]);
     }
   }, [rucValue]);
 
@@ -78,8 +87,19 @@ export default function CajaPage() {
     try {
       const res = await api.get(`/tramites/${ruc}`);
       setTramite(res.data);
+      // Auto-inicializar con 1 pago de efectivo por el total
+      if (res.data && res.data.estado === 'PENDIENTE_PAGO') {
+        setDetallesPago([{
+          id: Math.random().toString(),
+          metodo: "EFECTIVO",
+          monto: res.data.montoCobrado.toString(),
+          montoEntregado: "",
+          referencia: ""
+        }]);
+      }
     } catch (error) {
       setTramite(null);
+      setDetallesPago([]);
     } finally {
       setBuscando(false);
     }
@@ -159,6 +179,28 @@ export default function CajaPage() {
     }
   };
 
+  const agregarMetodoPago = () => {
+    setDetallesPago([...detallesPago, {
+      id: Math.random().toString(),
+      metodo: "EFECTIVO",
+      monto: "",
+      montoEntregado: "",
+      referencia: ""
+    }]);
+  };
+
+  const removerMetodoPago = (id: string) => {
+    setDetallesPago(detallesPago.filter(d => d.id !== id));
+  };
+
+  const actualizarDetalle = (id: string, campo: keyof PagoDetalle, valor: string) => {
+    setDetallesPago(detallesPago.map(d => d.id === id ? { ...d, [campo]: valor } : d));
+  };
+
+  const calcularSumaPagos = () => {
+    return detallesPago.reduce((acc, curr) => acc + (parseFloat(curr.monto) || 0), 0);
+  };
+
   const handlePago = async (values: z.infer<typeof pagoSchema>) => {
     if (!tramite) {
       toast.error("Por favor espere a que se cargue el trámite");
@@ -168,17 +210,44 @@ export default function CajaPage() {
       toast.error("Este trámite no está en estado PENDIENTE_PAGO");
       return;
     }
-    if (values.metodoPago === 'EFECTIVO' && parseFloat(montoEntregado || "0") < tramite.montoCobrado) {
-      toast.error("El monto entregado por el cliente es insuficiente");
+
+    const sumaTotal = calcularSumaPagos();
+    if (Math.abs(sumaTotal - tramite.montoCobrado) > 0.01) {
+      toast.error("La suma de los pagos debe ser exactamente S/ " + tramite.montoCobrado.toFixed(2));
       return;
     }
 
+    // Validar montos entregados si es efectivo, y referencias para el resto
+    for (const det of detallesPago) {
+      if (det.metodo === "EFECTIVO") {
+        if (parseFloat(det.montoEntregado || "0") < parseFloat(det.monto)) {
+          toast.error("El monto entregado en efectivo es menor al monto a pagar");
+          return;
+        }
+      } else {
+        if (!det.referencia || det.referencia.trim() === "") {
+          toast.error(`El método ${det.metodo} requiere un código de referencia o número de operación`);
+          return;
+        }
+      }
+    }
+
     try {
-      await api.post("/caja/pago-presencial", values);
+      const payload = {
+        ruc: values.ruc,
+        detalles: detallesPago.map(d => ({
+          metodo: d.metodo,
+          monto: parseFloat(d.monto),
+          montoEntregado: d.metodo === 'EFECTIVO' ? parseFloat(d.montoEntregado || d.monto) : null,
+          referencia: d.metodo !== 'EFECTIVO' ? d.referencia : null
+        }))
+      };
+
+      await api.post("/caja/pago-presencial", payload);
       toast.success("Pago registrado correctamente");
       formPago.reset();
       setTramite(null);
-      setMontoEntregado("");
+      setDetallesPago([]);
       fetchEstadoCaja();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al registrar el pago");
@@ -196,6 +265,49 @@ export default function CajaPage() {
 
   if (loading) {
     return <div className="min-h-screen bg-black flex items-center justify-center text-white/50">Cargando panel...</div>;
+  }
+
+  if (estadoCaja && !estadoCaja.abierta) {
+    return (
+      <div className="flex h-screen bg-black items-center justify-center relative z-10 w-full max-w-[100vw]">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/5 blur-[120px] rounded-full pointer-events-none"></div>
+        <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl w-full max-w-md relative z-10">
+          <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5 text-center">
+            <Briefcase className="w-12 h-12 text-white mx-auto mb-4" />
+            <CardTitle className="text-white text-2xl tracking-tight">Iniciar Turno de Caja</CardTitle>
+            <CardDescription className="text-white/50 text-base mt-2">
+              Para interactuar con el sistema, primero debes abrir la caja con el fondo inicial (vueltos).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8">
+            <Form {...formAbrir}>
+              <form onSubmit={formAbrir.handleSubmit(handleAbrirCaja)} className="space-y-6 text-left">
+                <FormField
+                  control={formAbrir.control}
+                  name="montoInicial"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Fondo Inicial (S/)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base" />
+                      </FormControl>
+                      <FormMessage className="text-red-400" />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full h-14 bg-white hover:bg-white/90 text-black font-semibold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                  Abrir Caja Ahora
+                </Button>
+                
+                <Button type="button" variant="ghost" onClick={() => { localStorage.removeItem("token"); router.push("/auth/login"); }} className="w-full text-white/50 hover:text-white mt-2">
+                  <LogOut className="w-4 h-4 mr-2"/> Cancelar y Salir
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -259,26 +371,26 @@ export default function CajaPage() {
                         <p className="text-2xl font-bold text-white mt-2">S/ {estadoCaja.montoInicial.toFixed(2)}</p>
                       </div>
                       <div className="bg-[#030303] p-6 rounded-2xl border border-white/5">
-                        <p className="text-xs font-mono uppercase tracking-wider text-white/50">Ventas del Día</p>
+                        <p className="text-xs font-mono uppercase tracking-wider text-white/50">Ingresos del Día</p>
                         <p className="text-xl font-semibold text-white mt-2">S/ {estadoCaja.ingresos.toFixed(2)}</p>
                       </div>
                       <div className="bg-[#030303] p-6 rounded-2xl border border-cyan-500/30 relative overflow-hidden col-span-2">
                         <div className="absolute inset-0 bg-cyan-500/5"></div>
-                        <p className="text-xs font-mono uppercase tracking-wider text-cyan-400 relative z-10">Monto Esperado en Caja</p>
+                        <p className="text-xs font-mono uppercase tracking-wider text-cyan-400 relative z-10">Total Acumulado en Caja</p>
                         <p className="text-3xl font-bold text-cyan-300 mt-2 relative z-10">S/ {estadoCaja.montoActual.toFixed(2)}</p>
-                        <p className="text-xs text-cyan-500/60 mt-1 relative z-10">Fondo inicial + Ventas. (Los vueltos no restan ganancia)</p>
+                        <p className="text-xs text-cyan-500/60 mt-1 relative z-10">Incluye Efectivo y transferencias electrónicas</p>
                       </div>
                     </div>
 
                     <div className="pt-6 border-t border-white/10 space-y-5">
                       <div>
                         <h4 className="text-lg font-medium text-white flex items-center gap-2 mb-1"><Briefcase className="w-5 h-5"/> Arqueo y Cierre</h4>
-                        <p className="text-sm text-white/50">Ingresa el dinero físico que acabas de contar para verificar si la caja cuadra.</p>
+                        <p className="text-sm text-white/50">Ingresa todo el dinero (efectivo + reportes POS/Yape) para cuadrar la caja.</p>
                       </div>
                       
                       <div className="flex gap-4 items-end">
                         <div className="flex-1">
-                          <label className="text-xs font-mono uppercase tracking-wider text-white/50 mb-2 block">Dinero Físico Contado (S/)</label>
+                          <label className="text-xs font-mono uppercase tracking-wider text-white/50 mb-2 block">Suma Física y Reportes (S/)</label>
                           <Input 
                             type="number" step="0.01" 
                             value={montoFisico} 
@@ -347,7 +459,7 @@ export default function CajaPage() {
                     <Receipt className="text-white w-6 h-6" /> Registrar Venta (Cobro Presencial)
                   </CardTitle>
                   <CardDescription className="text-white/50 text-base mt-2">
-                    Cobra trámites en ventanilla y calcula el vuelto automáticamente.
+                    Puedes dividir el pago combinando múltiples métodos (Ej: Efectivo + Yape).
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-8">
@@ -379,68 +491,109 @@ export default function CajaPage() {
                         <div className="bg-white/5 p-5 rounded-2xl border border-cyan-500/20 space-y-2">
                           <p className="text-sm text-white/70"><span className="font-semibold text-white">Contribuyente:</span> {tramite.razonSocial}</p>
                           <p className="text-sm text-white/70"><span className="font-semibold text-white">Estado:</span> <span className={tramite.estado === 'PENDIENTE_PAGO' ? 'text-amber-400 font-bold' : 'text-red-400 font-bold'}>{tramite.estado}</span></p>
-                          <div className="pt-2 border-t border-white/10 mt-2">
+                          <div className="pt-2 border-t border-white/10 mt-2 flex justify-between items-end">
                             <p className="text-2xl font-bold text-cyan-400">Total a Pagar: S/ {tramite.montoCobrado.toFixed(2)}</p>
+                            
+                            {/* Sumatorio y validación visual */}
+                            {detallesPago.length > 0 && (
+                              <div className="text-right">
+                                <p className="text-sm text-white/50">Monto Distribuido</p>
+                                <p className={`text-xl font-bold ${Math.abs(calcularSumaPagos() - tramite.montoCobrado) < 0.01 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                  S/ {calcularSumaPagos().toFixed(2)}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
                       
-                      <FormField
-                        control={formPago.control}
-                        name="metodoPago"
-                        render={({ field }) => (
-                          <FormItem className="space-y-3">
-                            <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Método de Pago</FormLabel>
-                            <FormControl>
-                              <div className="grid grid-cols-2 gap-4">
-                                <label className={`flex flex-col items-center justify-center p-6 rounded-2xl border cursor-pointer transition-all ${field.value === 'EFECTIVO' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-white/5 bg-[#030303] text-white/50 hover:border-white/10'}`}>
-                                  <input type="radio" value="EFECTIVO" checked={field.value === 'EFECTIVO'} onChange={field.onChange} className="sr-only" />
-                                  <DollarSign className="mb-3 h-8 w-8" />
-                                  <span className="font-semibold tracking-wide">EFECTIVO</span>
-                                </label>
-                                <label className={`flex flex-col items-center justify-center p-6 rounded-2xl border cursor-pointer transition-all ${field.value === 'TARJETA' ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-400' : 'border-white/5 bg-[#030303] text-white/50 hover:border-white/10'}`}>
-                                  <input type="radio" value="TARJETA" checked={field.value === 'TARJETA'} onChange={field.onChange} className="sr-only" />
-                                  <CreditCard className="mb-3 h-8 w-8" />
-                                  <span className="font-semibold tracking-wide">TARJETA / POS</span>
-                                </label>
+                      {tramite && tramite.estado === 'PENDIENTE_PAGO' && (
+                        <div className="space-y-4 pt-4 border-t border-white/10">
+                          <h3 className="text-sm font-mono uppercase tracking-wider text-white/70">Detalles de Pago</h3>
+                          
+                          {detallesPago.map((detalle, index) => (
+                            <div key={detalle.id} className="p-5 bg-[#030303] rounded-2xl border border-white/10 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-cyan-400 flex items-center gap-2">
+                                  {detalle.metodo === 'EFECTIVO' ? <Banknote className="w-4 h-4"/> : 
+                                   detalle.metodo === 'YAPE' ? <Smartphone className="w-4 h-4"/> : 
+                                   detalle.metodo === 'TARJETA' ? <CreditCard className="w-4 h-4"/> : 
+                                   <DollarSign className="w-4 h-4"/>}
+                                  Pago #{index + 1}
+                                </span>
+                                {detallesPago.length > 1 && (
+                                  <Button type="button" variant="ghost" size="sm" onClick={() => removerMetodoPago(detalle.id)} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 px-2">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                )}
                               </div>
-                            </FormControl>
-                            <FormMessage className="text-red-400" />
-                          </FormItem>
-                        )}
-                      />
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-xs text-white/50 mb-1 block">Método</label>
+                                  <select 
+                                    className="w-full h-12 bg-white/5 border border-white/10 text-white rounded-xl px-3 outline-none focus:border-cyan-500/50"
+                                    value={detalle.metodo}
+                                    onChange={(e) => actualizarDetalle(detalle.id, 'metodo', e.target.value)}
+                                  >
+                                    <option value="EFECTIVO" className="bg-black">Efectivo</option>
+                                    <option value="YAPE" className="bg-black">Yape / Plin</option>
+                                    <option value="TARJETA" className="bg-black">Tarjeta / POS</option>
+                                    <option value="TRANSFERENCIA" className="bg-black">Transferencia</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-white/50 mb-1 block">Monto a Cobrar (S/)</label>
+                                  <Input 
+                                    type="number" step="0.01" 
+                                    value={detalle.monto} 
+                                    onChange={e => actualizarDetalle(detalle.id, 'monto', e.target.value)} 
+                                    className="h-12 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-cyan-500/50"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                              </div>
 
-                      {tramite && metodoPago === "EFECTIVO" && (
-                        <div className="space-y-5 pt-4 border-t border-white/10">
-                           <div>
-                             <label className="text-xs font-mono uppercase tracking-wider text-cyan-400 mb-2 block">Monto Entregado por el Cliente (S/)</label>
-                             <Input 
-                               type="number" step="0.01" 
-                               value={montoEntregado} 
-                               onChange={e => setMontoEntregado(e.target.value)} 
-                               className="h-14 bg-cyan-500/5 border-cyan-500/30 text-white text-xl rounded-xl focus-visible:ring-cyan-500/50 font-semibold"
-                               placeholder="0.00"
-                             />
-                           </div>
-                           
-                           {parseFloat(montoEntregado || "0") >= tramite.montoCobrado && (
-                             <div className="bg-emerald-500/10 border border-emerald-500/30 p-5 rounded-2xl flex justify-between items-center">
-                               <p className="text-base text-emerald-500 font-medium">Vuelto a entregar:</p>
-                               <p className="text-4xl font-black text-emerald-400">
-                                 S/ {(parseFloat(montoEntregado) - tramite.montoCobrado).toFixed(2)}
-                               </p>
-                             </div>
-                           )}
-                           
-                           {parseFloat(montoEntregado || "0") > 0 && parseFloat(montoEntregado) < tramite.montoCobrado && (
-                             <p className="text-sm text-red-400">El monto entregado es menor al costo del trámite.</p>
-                           )}
+                              {detalle.metodo === 'EFECTIVO' ? (
+                                <div>
+                                  <label className="text-xs text-cyan-400 mb-1 block">Monto Entregado por Cliente (S/) - Para calcular vuelto</label>
+                                  <Input 
+                                    type="number" step="0.01" 
+                                    value={detalle.montoEntregado} 
+                                    onChange={e => actualizarDetalle(detalle.id, 'montoEntregado', e.target.value)} 
+                                    className="h-12 bg-cyan-500/5 border-cyan-500/30 text-white rounded-xl focus-visible:ring-cyan-500/50"
+                                    placeholder="0.00"
+                                  />
+                                  {parseFloat(detalle.montoEntregado) > parseFloat(detalle.monto) && (
+                                    <p className="text-xs text-emerald-400 mt-2">
+                                      Vuelto: S/ {(parseFloat(detalle.montoEntregado) - parseFloat(detalle.monto)).toFixed(2)}
+                                    </p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="text-xs text-amber-400 mb-1 block">Código de Referencia / Nro Operación</label>
+                                  <Input 
+                                    type="text" 
+                                    value={detalle.referencia || ''} 
+                                    onChange={e => actualizarDetalle(detalle.id, 'referencia', e.target.value)} 
+                                    className="h-12 bg-amber-500/5 border-amber-500/30 text-white rounded-xl focus-visible:ring-amber-500/50"
+                                    placeholder="Ej. 123456789"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+
+                          <Button type="button" variant="outline" onClick={agregarMetodoPago} className="w-full h-12 border-white/10 border-dashed text-white/70 hover:bg-white/5 hover:text-white rounded-xl">
+                            <Plus className="w-4 h-4 mr-2" /> Agregar Pago Dividido
+                          </Button>
                         </div>
                       )}
 
                       <Button 
                         type="submit" 
-                        disabled={tramite && metodoPago === "EFECTIVO" && parseFloat(montoEntregado || "0") < tramite.montoCobrado}
+                        disabled={!tramite || tramite.estado !== 'PENDIENTE_PAGO'}
                         className="w-full h-14 bg-white hover:bg-white/90 disabled:bg-white/20 text-black disabled:text-white/40 font-bold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] mt-6"
                       >
                         Confirmar Venta y Procesar
