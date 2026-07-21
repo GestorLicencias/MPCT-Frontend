@@ -517,7 +517,7 @@ export default function CajaPage() {
                         Ir a Formulario de Solicitud <ExternalLink className="ml-2 h-4 w-4" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl p-0 bg-black border-white/10 h-[90vh] overflow-y-auto">
+                    <DialogContent className="max-w-4xl p-6 md:p-8 bg-[#050505] border-white/10 max-h-[90vh] overflow-y-auto rounded-3xl">
                       <DialogTitle className="sr-only">Nueva Solicitud Oficial</DialogTitle>
                       <SolicitarPage 
                         isEmbedded={true} 

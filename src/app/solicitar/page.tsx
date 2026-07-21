@@ -156,18 +156,18 @@ export default function SolicitarPage({ onSuccessCallback, isEmbedded = false }:
           </Button>
         )}
 
-        <div className="mb-12">
-          <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">Nueva Solicitud</h1>
-          <p className="text-white/40 text-lg">
+        <div className={isEmbedded ? "mb-6" : "mb-12"}>
+          <h1 className={`${isEmbedded ? 'text-2xl lg:text-3xl' : 'text-4xl lg:text-5xl'} font-bold text-white mb-2 tracking-tight`}>Nueva Solicitud</h1>
+          <p className={`text-white/40 ${isEmbedded ? 'text-sm' : 'text-lg'}`}>
             Completa los datos para iniciar tu trámite de Licencia de Funcionamiento. Tus datos de empresa se validarán automáticamente con SUNAT.
           </p>
         </div>
 
-        <div className="bg-[#030303] border border-white/10 p-8 sm:p-12 rounded-3xl shadow-2xl relative overflow-hidden group">
+        <div className={`bg-[#030303] ${isEmbedded ? 'p-4 sm:p-6 rounded-2xl' : 'border border-white/10 p-8 sm:p-12 rounded-3xl shadow-2xl'} relative overflow-hidden group`}>
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className={isEmbedded ? "space-y-5" : "space-y-8"}>
               
               <div className="grid md:grid-cols-2 gap-8">
                 <FormField
