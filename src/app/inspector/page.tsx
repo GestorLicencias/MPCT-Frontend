@@ -235,6 +235,11 @@ export default function InspectorPage() {
                         <Badge variant="outline" className={`mr-2 rounded-lg font-mono text-[10px] uppercase tracking-wider ${item.displayTipo === 'MODIFICACION' ? 'text-amber-400 border-amber-400/30' : 'text-blue-400 border-blue-400/30'}`}>
                           {item.displayTipo}
                         </Badge>
+                        {item.numeroInspeccion === 2 && (
+                          <Badge variant="outline" className="mr-2 bg-orange-500/10 text-orange-400 border-orange-500/30 rounded-lg font-mono text-[10px] uppercase tracking-wider">
+                            2DA VISITA
+                          </Badge>
+                        )}
                         <Badge variant="secondary" className="bg-white/5 text-white/70 border-white/10 rounded-lg font-mono text-[10px] uppercase tracking-wider">{item.displayRubro}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -284,6 +289,13 @@ export default function InspectorPage() {
               <DialogDescription className="text-white/50">RUC: {selected.displayRuc} - {selected.displayRazon}</DialogDescription>
             </DialogHeader>
             <div className="py-4 max-h-[70vh] overflow-y-auto pr-2 space-y-6">
+              
+              {selected.numeroInspeccion === 2 && selected.tramiteObj.observacionesGenerales && (
+                <div className="bg-orange-500/10 border border-orange-500/30 p-4 rounded-2xl mb-4">
+                  <p className="text-xs font-mono uppercase tracking-wider text-orange-400 mb-1">Observación Previa (1ra Visita)</p>
+                  <p className="text-sm text-orange-200">{selected.tramiteObj.observacionesGenerales}</p>
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1">
