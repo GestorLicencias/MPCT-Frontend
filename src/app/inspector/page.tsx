@@ -210,6 +210,7 @@ export default function InspectorPage() {
                   <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Fecha</TableHead>
                   <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">RUC</TableHead>
                   <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Razón Social</TableHead>
+                  <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Dirección</TableHead>
                   <TableHead className="text-xs font-mono uppercase tracking-wider text-white/50">Tipo / Rubro</TableHead>
                   <TableHead className="text-right text-xs font-mono uppercase tracking-wider text-white/50">Acción</TableHead>
                 </TableRow>
@@ -217,7 +218,7 @@ export default function InspectorPage() {
               <TableBody>
                 {inspecciones.length === 0 ? (
                   <TableRow className="border-white/10 hover:bg-transparent">
-                    <TableCell colSpan={5} className="text-center py-8 text-white/40">
+                    <TableCell colSpan={6} className="text-center py-8 text-white/40">
                       No hay trámites pendientes de evaluación.
                     </TableCell>
                   </TableRow>
@@ -227,6 +228,9 @@ export default function InspectorPage() {
                       <TableCell className="text-white/70">{new Date(item.displayDate).toLocaleDateString()}</TableCell>
                       <TableCell className="font-medium text-white">{item.displayRuc}</TableCell>
                       <TableCell className="text-white/70">{item.displayRazon}</TableCell>
+                      <TableCell className="text-white/70 text-xs max-w-[200px] truncate" title={item.tramiteObj?.domicilioFiscal}>
+                        {item.tramiteObj?.domicilioFiscal}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className={`mr-2 rounded-lg font-mono text-[10px] uppercase tracking-wider ${item.displayTipo === 'MODIFICACION' ? 'text-amber-400 border-amber-400/30' : 'text-blue-400 border-blue-400/30'}`}>
                           {item.displayTipo}
