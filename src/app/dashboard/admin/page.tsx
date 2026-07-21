@@ -14,6 +14,8 @@ function ValidacionPagosSection() {
   const [pagos, setPagos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<string | null>(null);
+  const [rejectingPago, setRejectingPago] = useState<string | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState("");
 
   useEffect(() => {
     fetchPagos();
@@ -30,11 +32,16 @@ function ValidacionPagosSection() {
     }
   };
 
-  const validarPago = async (id: string, aprobado: boolean) => {
+  const validarPago = async (id: string, aprobado: boolean, motivo?: string) => {
     try {
-      await api.post(`/admin/pagos/${id}/validar?aprobado=${aprobado}`);
+      await api.post(`/admin/pagos/${id}/validar`, {
+        aprobado,
+        motivoOverride: motivo || ""
+      });
       toast.success(`Pago ${aprobado ? 'Aprobado' : 'Rechazado'} correctamente.`);
       fetchPagos();
+      setRejectingPago(null);
+      setMotivoRechazo("");
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al procesar el pago.");
     }
@@ -83,13 +90,13 @@ function ValidacionPagosSection() {
                     <Button 
                       variant="outline" 
                       className="bg-rose-500/10 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white"
-                      onClick={() => validarPago(pago.id, false)}
+                      onClick={() => setRejectingPago(pago.pagoId || pago.id)}
                     >
                       Rechazar
                     </Button>
                     <Button 
                       className="bg-emerald-600 hover:bg-emerald-500 text-white"
-                      onClick={() => validarPago(pago.id, true)}
+                      onClick={() => validarPago(pago.pagoId || pago.id, true)}
                     >
                       Aprobar
                     </Button>
@@ -111,6 +118,40 @@ function ValidacionPagosSection() {
             {selectedVoucher && (
               <img src={selectedVoucher} alt="Voucher de pago" className="max-h-[70vh] object-contain w-full" />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rejectingPago} onOpenChange={(open) => !open && setRejectingPago(null)}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-rose-500">Rechazar Pago</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Indique el motivo del rechazo. Se enviará un correo al usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-300">Motivo de Rechazo</label>
+              <textarea 
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+                placeholder="Ej. Este voucher ya fue usado..."
+                className="w-full min-h-[100px] bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-rose-500/50 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setRejectingPago(null)} className="border-slate-700 text-white hover:bg-slate-800">
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => validarPago(rejectingPago!, false, motivoRechazo)} 
+                disabled={!motivoRechazo.trim()}
+                className="bg-rose-600 hover:bg-rose-500 text-white"
+              >
+                Confirmar Rechazo
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

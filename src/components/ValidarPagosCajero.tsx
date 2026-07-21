@@ -15,6 +15,8 @@ export function ValidarPagosCajero() {
   const [loading, setLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<string | null>(null);
   const [voucherUrl, setVoucherUrl] = useState<string | null>(null);
+  const [rejectingPago, setRejectingPago] = useState<string | null>(null);
+  const [motivoRechazo, setMotivoRechazo] = useState("");
 
   useEffect(() => {
     fetchPagos();
@@ -35,14 +37,20 @@ export function ValidarPagosCajero() {
     }
   };
 
-  const handleValidar = async (pagoId: string, aprobado: boolean) => {
+  const handleValidar = async (pagoId: string, aprobado: boolean, motivo?: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post(`${API_URL}/caja/pagos/${pagoId}/validar?aprobado=${aprobado}`, {}, {
+      let url = `${API_URL}/caja/pagos/${pagoId}/validar?aprobado=${aprobado}`;
+      if (motivo) {
+        url += `&motivo=${encodeURIComponent(motivo)}`;
+      }
+      const res = await axios.post(url, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success(res.data.message || (aprobado ? "Pago validado" : "Pago rechazado"));
       fetchPagos();
+      setRejectingPago(null);
+      setMotivoRechazo("");
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Error al validar el pago");
     }
@@ -110,7 +118,7 @@ export function ValidarPagosCajero() {
                   <Button onClick={() => handleValidar(pago.pagoId, true)} className="bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 flex-1 xl:flex-none">
                     <CheckCircle2 className="w-4 h-4 mr-2" /> Aprobar
                   </Button>
-                  <Button onClick={() => handleValidar(pago.pagoId, false)} className="bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 flex-1 xl:flex-none">
+                  <Button onClick={() => setRejectingPago(pago.pagoId)} className="bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 flex-1 xl:flex-none">
                     <XCircle className="w-4 h-4 mr-2" /> Rechazar
                   </Button>
                 </div>
@@ -131,6 +139,40 @@ export function ValidarPagosCajero() {
             ) : (
               <Loader2 className="w-8 h-8 animate-spin text-white/50" />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!rejectingPago} onOpenChange={(open) => !open && setRejectingPago(null)}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-400 flex items-center gap-2"><XCircle className="w-5 h-5" /> Rechazar Pago</DialogTitle>
+            <DialogDescription className="text-white/50">
+              Por favor indique el motivo del rechazo. Este mensaje será enviado al usuario.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-white/70">Motivo de Rechazo</label>
+              <textarea 
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+                placeholder="Ej. Este voucher ya fue usado en otro trámite..."
+                className="w-full min-h-[100px] bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:outline-none focus:border-red-500/50 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setRejectingPago(null)} className="border-white/10 text-white hover:bg-white/10">
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => handleValidar(rejectingPago!, false, motivoRechazo)} 
+                disabled={!motivoRechazo.trim()}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                Confirmar Rechazo
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
