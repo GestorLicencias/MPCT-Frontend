@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Briefcase, CreditCard, DollarSign, LogOut, Receipt, ExternalLink, Search, Bell, AlertTriangle, Send, Plus, Trash2, Smartphone, Banknote } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import SolicitarPage from "@/app/solicitar/page";
 
 interface CajaEstado {
   cajaId: string | null;
@@ -53,6 +55,7 @@ export default function CajaPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"estado" | "cobro" | "validar" | "alertas">("estado");
   const [mostrarFormAbrir, setMostrarFormAbrir] = useState(false);
+  const [modalSolicitudAbierto, setModalSolicitudAbierto] = useState(false);
 
   const [tramite, setTramite] = useState<any>(null);
   const [buscando, setBuscando] = useState(false);
@@ -508,11 +511,24 @@ export default function CajaPage() {
                 </CardHeader>
                 <CardContent className="p-8">
                   <p className="text-sm text-white/50 mb-6">Abre el formulario público para registrar un nuevo trámite en nombre del ciudadano que está en ventanilla.</p>
-                  <Link href="/solicitar" target="_blank" rel="noopener noreferrer" className="block w-full">
-                    <Button variant="outline" className="w-full h-14 border-white/10 text-white hover:bg-white/5 hover:text-white rounded-xl">
-                      Ir a Formulario de Solicitud <ExternalLink className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <Dialog open={modalSolicitudAbierto} onOpenChange={setModalSolicitudAbierto}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="w-full h-14 border-white/10 text-white hover:bg-white/5 hover:text-white rounded-xl">
+                        Ir a Formulario de Solicitud <ExternalLink className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl p-0 bg-black border-white/10 h-[90vh] overflow-y-auto">
+                      <DialogTitle className="sr-only">Nueva Solicitud Oficial</DialogTitle>
+                      <SolicitarPage 
+                        isEmbedded={true} 
+                        onSuccessCallback={(ruc) => {
+                          setModalSolicitudAbierto(false);
+                          formPago.setValue("ruc", ruc);
+                          handleBuscarTramite();
+                        }} 
+                      />
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
 

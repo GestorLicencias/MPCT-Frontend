@@ -163,11 +163,107 @@ export default function AdminPage() {
               <ReporteCierresSection />
             </div>
           )}
+
+          {activeTab === "password" && (
+            <div className="relative z-10">
+              <CambiarContrasenaSection />
+            </div>
+          )}
         </div>
       </main>
     </div>
   );
 }
+
+function CambiarContrasenaSection() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Las contraseñas nuevas no coinciden.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("La nueva contraseña debe tener al menos 8 caracteres.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.put("/admin/change-password", {
+        currentPassword,
+        newPassword
+      });
+      toast.success("Contraseña actualizada exitosamente.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Error al cambiar la contraseña.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl relative overflow-hidden">
+      <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+        <CardTitle className="text-white text-2xl tracking-tight flex items-center gap-2">
+          <Key className="text-white w-6 h-6" /> Cambiar Contraseña
+        </CardTitle>
+        <CardDescription className="text-white/50 text-base mt-2">
+          Actualiza tu contraseña de acceso al panel de administración.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-8">
+        <form onSubmit={handleSubmit} className="space-y-6 max-w-md">
+          <div className="space-y-2">
+            <label className="text-xs font-mono uppercase tracking-wider text-white/50">Contraseña Actual</label>
+            <Input 
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="bg-white/5 border-white/10 h-14 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-mono uppercase tracking-wider text-white/50">Nueva Contraseña</label>
+            <Input 
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="bg-white/5 border-white/10 h-14 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-mono uppercase tracking-wider text-white/50">Confirmar Nueva Contraseña</label>
+            <Input 
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="bg-white/5 border-white/10 h-14 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
+              required
+            />
+          </div>
+          <Button 
+            type="submit" 
+            disabled={loading}
+            className="w-full h-14 bg-white text-black font-semibold hover:bg-white/90 rounded-xl transition-all"
+          >
+            {loading ? "Actualizando..." : "Actualizar Contraseña"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 function ReporteCierresSection() {
   const [cierres, setCierres] = useState<any[]>([]);

@@ -42,7 +42,7 @@ const formSchema = z.object({
   }
 });
 
-export default function SolicitarPage() {
+export default function SolicitarPage({ onSuccessCallback, isEmbedded = false }: { onSuccessCallback?: (ruc: string) => void, isEmbedded?: boolean }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRucValidating, setIsRucValidating] = useState(false);
@@ -126,8 +126,13 @@ export default function SolicitarPage() {
         headers: { "Content-Type": "multipart/form-data" }
       });
 
-      toast.success("Solicitud creada con éxito. Redirigiendo al seguimiento...");
-      router.push(`/seguimiento/${response.data.ruc}`);
+      if (onSuccessCallback) {
+        toast.success("Solicitud creada con éxito.");
+        onSuccessCallback(response.data.ruc);
+      } else {
+        toast.success("Solicitud creada con éxito. Redirigiendo al seguimiento...");
+        router.push(`/seguimiento/${response.data.ruc}`);
+      }
       
     } catch (error: any) {
       console.error(error);
@@ -139,15 +144,17 @@ export default function SolicitarPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black pt-28 pb-24 relative z-10">
+    <div className={`bg-black relative z-10 ${isEmbedded ? 'min-h-full py-8' : 'min-h-screen pt-28 pb-24'}`}>
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 blur-[150px] rounded-full"></div>
       </div>
       
-      <div className="max-w-3xl mx-auto px-6 relative z-10">
-        <Button variant="ghost" onClick={() => router.back()} className="mb-10 -ml-4 text-white/50 hover:text-white hover:bg-white/5 font-mono uppercase tracking-wider text-xs">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Regresar
-        </Button>
+      <div className={`mx-auto relative z-10 ${isEmbedded ? 'w-full' : 'max-w-3xl px-6'}`}>
+        {!isEmbedded && (
+          <Button variant="ghost" onClick={() => router.back()} className="mb-10 -ml-4 text-white/50 hover:text-white hover:bg-white/5 font-mono uppercase tracking-wider text-xs">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Regresar
+          </Button>
+        )}
 
         <div className="mb-12">
           <h1 className="text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight">Nueva Solicitud</h1>
