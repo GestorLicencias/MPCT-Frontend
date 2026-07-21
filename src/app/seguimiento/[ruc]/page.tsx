@@ -33,10 +33,6 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
   
   // States para Subsanción
   const [plano, setPlano] = useState<File | null>(null);
-  const [foto, setFoto] = useState<File | null>(null);
-  const [foto2, setFoto2] = useState<File | null>(null);
-  const [foto3, setFoto3] = useState<File | null>(null);
-  const [foto4, setFoto4] = useState<File | null>(null);
   const [subsanando, setSubsanando] = useState(false);
 
   // States para Pago
@@ -78,24 +74,20 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
   };
 
   const handleSubsanar = async () => {
-    if (!plano && !foto && !foto2 && !foto3 && !foto4) {
-      toast.error("Debe adjuntar al menos un archivo corregido para subsanar.");
+    if (!plano) {
+      toast.error("Debe adjuntar el archivo corregido del plano para subsanar.");
       return;
     }
     setSubsanando(true);
     try {
       const formData = new FormData();
-      if (plano) formData.append("plano", plano);
-      if (foto) formData.append("foto", foto);
-      if (foto2) formData.append("foto2", foto2);
-      if (foto3) formData.append("foto3", foto3);
-      if (foto4) formData.append("foto4", foto4);
+      formData.append("plano", plano);
 
       await axios.patch(`${API_URL}/${tramite?.ruc}/archivos`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
       });
-      toast.success("Archivos actualizados correctamente. El trámite volverá a ser evaluado.");
-      setPlano(null); setFoto(null); setFoto2(null); setFoto3(null); setFoto4(null);
+      toast.success("Plano corregido recibido correctamente. El trámite está en espera de la segunda inspección.");
+      setPlano(null);
       fetchTramite();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al subir archivos.");
@@ -289,39 +281,14 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
             )}
 
             <div className="space-y-6 border border-white/5 p-8 rounded-2xl bg-[#050505]">
-              <h4 className="font-semibold text-white tracking-tight">Archivos que requieren corrección</h4>
-              <div className="grid md:grid-cols-2 gap-6">
-                {obsArray.includes('PLANO') && (
+              <h4 className="font-semibold text-white tracking-tight">Archivo que requiere corrección</h4>
+              <div className="grid gap-6">
+                {obsArray.includes('PLANO') ? (
                   <div>
                     <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Plano</label>
                     <Input type="file" accept="application/pdf, image/*" onChange={(e) => setPlano(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
                   </div>
-                )}
-                {obsArray.includes('FOTO1') && (
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 1</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
-                  </div>
-                )}
-                {obsArray.includes('FOTO2') && (
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 2</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto2(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
-                  </div>
-                )}
-                {obsArray.includes('FOTO3') && (
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 3</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto3(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
-                  </div>
-                )}
-                {obsArray.includes('FOTO4') && (
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider mb-2 text-white/50">Reemplazar Foto 4</label>
-                    <Input type="file" accept="image/*" onChange={(e) => setFoto4(e.target.files?.[0] || null)} className="border-white/10 text-white/70 bg-white/5 file:bg-white file:text-black file:font-semibold file:border-0 hover:file:bg-white/90 rounded-lg py-2" />
-                  </div>
-                )}
-                {obsArray.length === 0 && (
+                ) : (
                   <p className="text-white/40 text-sm">No se especificaron archivos. Por favor, reenvíe la documentación según las observaciones.</p>
                 )}
               </div>
