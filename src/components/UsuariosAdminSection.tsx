@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, Key, CreditCard } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export function UsuariosAdminSection() {
   const [users, setUsers] = useState<any[]>([]);
@@ -18,6 +19,12 @@ export function UsuariosAdminSection() {
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerRole, setRegisterRole] = useState("INSPECTOR");
   const [isRegistering, setIsRegistering] = useState(false);
+
+  // Suspension Modal State
+  const [suspensionModalOpen, setSuspensionModalOpen] = useState(false);
+  const [selectedUserForSuspension, setSelectedUserForSuspension] = useState<any>(null);
+  const [motivoSuspension, setMotivoSuspension] = useState("");
+  const [isSubmittingStatus, setIsSubmittingStatus] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -52,24 +59,39 @@ export function UsuariosAdminSection() {
   };
 
   const toggleStatus = async (user: any) => {
-    let motivo = "";
     if (user.isActive) {
-      motivo = window.prompt("Por favor, ingrese el motivo obligatorio de la suspensión:") || "";
-      if (!motivo.trim()) {
-        toast.error("El motivo de suspensión es obligatorio.");
-        return;
-      }
+      // Abre el modal para solicitar el motivo de la suspensión
+      setSelectedUserForSuspension(user);
+      setMotivoSuspension("");
+      setSuspensionModalOpen(true);
+    } else {
+      // Reactivación no requiere motivo
+      ejecutarCambioEstado(user, true, "");
     }
-    
+  };
+
+  const confirmarSuspension = async () => {
+    if (!motivoSuspension.trim()) {
+      toast.error("El motivo de suspensión es obligatorio.");
+      return;
+    }
+    await ejecutarCambioEstado(selectedUserForSuspension, false, motivoSuspension.trim());
+    setSuspensionModalOpen(false);
+  };
+
+  const ejecutarCambioEstado = async (user: any, newStatus: boolean, motivo: string) => {
+    setIsSubmittingStatus(true);
     try {
       await api.patch(`/admin/usuarios/${user.id}/estado`, { 
-        isActive: !user.isActive,
-        motivo: motivo.trim() 
+        isActive: newStatus,
+        motivoSuspension: motivo
       });
-      toast.success(`Usuario ${user.isActive ? 'suspendido' : 'reactivado'} exitosamente.`);
+      toast.success(`Usuario ${!newStatus ? 'suspendido' : 'reactivado'} exitosamente.`);
       fetchUsers();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Error al cambiar el estado del usuario.");
+    } finally {
+      setIsSubmittingStatus(false);
     }
   };
 
@@ -178,6 +200,43 @@ export function UsuariosAdminSection() {
           )}
         </CardContent>
       </Card>
+
+      {/* Suspension Modal */}
+      <Dialog open={suspensionModalOpen} onOpenChange={setSuspensionModalOpen}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Suspender Usuario</DialogTitle>
+            <DialogDescription className="text-white/50">
+              Por favor, ingrese el motivo obligatorio de la suspensión. Esta acción quedará registrada en auditoría.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {selectedUserForSuspension && (
+              <div className="bg-white/5 p-3 rounded-lg border border-white/10 text-sm">
+                <span className="text-white/50">Usuario a suspender: </span>
+                <strong className="text-white">{selectedUserForSuspension.email}</strong>
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-2">Motivo</label>
+              <Input 
+                value={motivoSuspension}
+                onChange={(e) => setMotivoSuspension(e.target.value)}
+                placeholder="Ej: Abandono de funciones..."
+                className="bg-black border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-red-500/50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSuspensionModalOpen(false)} className="border-white/10 text-white hover:bg-white/5 rounded-xl">
+              Cancelar
+            </Button>
+            <Button onClick={confirmarSuspension} disabled={!motivoSuspension.trim() || isSubmittingStatus} className="bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/20 rounded-xl">
+              {isSubmittingStatus ? "Guardando..." : "Confirmar Suspensión"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
