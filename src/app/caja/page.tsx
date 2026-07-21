@@ -524,7 +524,7 @@ export default function CajaPage() {
                         onSuccessCallback={(ruc) => {
                           setModalSolicitudAbierto(false);
                           formPago.setValue("ruc", ruc);
-                          handleBuscarTramite();
+                          buscarTramite(ruc);
                         }} 
                       />
                     </DialogContent>

@@ -21,7 +21,7 @@ const formSchema = z.object({
   ruc: z.string().length(11, { message: "El RUC debe tener 11 dígitos exactos." }),
   dni: z.string().length(8, { message: "El DNI debe tener 8 dígitos exactos." }),
   representanteLegal: z.string().min(5, { message: "El nombre es muy corto." }),
-  email: z.string().email({ message: "Ingrese un correo electrónico válido." }).optional().or(z.literal("")),
+  email: z.string().email({ message: "Ingrese un correo electrónico válido." }),
   domicilioFiscal: z.string().optional(),
   rubro: z.string().min(2, { message: "Seleccione el rubro." }),
   rubroOtro: z.string().optional(),
