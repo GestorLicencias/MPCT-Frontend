@@ -46,6 +46,7 @@ export default function SolicitarPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRucValidating, setIsRucValidating] = useState(false);
   const [isRucValid, setIsRucValid] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,8 +82,10 @@ export default function SolicitarPage() {
       if (data.dniGerente) {
         form.setValue("dni", data.dniGerente);
         form.setValue("representanteLegal", data.nombreGerente);
+        setIsAutoFilled(true);
         toast.success(data.mensaje || "RUC validado: Empresa activa y habida.");
       } else {
+        setIsAutoFilled(false);
         toast.warning(data.mensaje || "RUC Válido. Inserte manualmente los datos del representante.");
       }
       
@@ -210,7 +213,8 @@ export default function SolicitarPage() {
                             placeholder="Ej. 76543210" 
                             {...field} 
                             onChange={(e) => field.onChange(e.target.value.replace(/\D/g, '').slice(0, 8))}
-                            className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20"
+                            disabled={isAutoFilled}
+                            className={`h-14 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20 ${isAutoFilled ? "bg-white/5 opacity-70 cursor-not-allowed" : "bg-white/5"}`}
                           />
                         </FormControl>
                         <FormMessage className="text-red-400" />
@@ -244,7 +248,12 @@ export default function SolicitarPage() {
                     <FormItem>
                       <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Nombres y Apellidos del Titular</FormLabel>
                       <FormControl>
-                        <Input placeholder="Ej. Juan Pérez" {...field} className="h-14 bg-white/5 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20" />
+                        <Input 
+                          placeholder="Ej. Juan Pérez" 
+                          {...field} 
+                          disabled={isAutoFilled}
+                          className={`h-14 border-white/10 text-white focus-visible:ring-1 focus-visible:ring-cyan-500/50 rounded-xl px-4 text-base placeholder:text-white/20 ${isAutoFilled ? "bg-white/5 opacity-70 cursor-not-allowed" : "bg-white/5"}`}
+                        />
                       </FormControl>
                       <FormMessage className="text-red-400" />
                     </FormItem>
