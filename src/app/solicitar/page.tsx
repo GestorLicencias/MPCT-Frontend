@@ -41,6 +41,7 @@ export default function SolicitarPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRucValidating, setIsRucValidating] = useState(false);
+  const [isRucValid, setIsRucValid] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,14 +57,26 @@ export default function SolicitarPage() {
   });
 
   const handleRucBlur = async (ruc: string) => {
-    if (ruc.length !== 11) return;
+    if (ruc.length !== 11) {
+      setIsRucValid(false);
+      return;
+    }
     setIsRucValidating(true);
+    setIsRucValid(false);
     form.clearErrors("ruc");
     try {
       const response = await axios.get(`${API_URL}/ruc/${ruc}/validar`);
       const { data } = response;
-      if (data.dniRepresentante) form.setValue("dni", data.dniRepresentante);
-      if (data.representanteLegal) form.setValue("representanteLegal", data.representanteLegal);
+      
+      if (!data.valido) {
+        form.setError("ruc", { type: "manual", message: data.mensaje || "RUC inválido." });
+        return;
+      }
+      
+      if (data.dniGerente) form.setValue("dni", data.dniGerente);
+      if (data.nombreGerente) form.setValue("representanteLegal", data.nombreGerente);
+      
+      setIsRucValid(true);
       toast.success("RUC validado: Empresa activa y habida.");
     } catch (error: any) {
       console.error("RUC validation error:", error);
@@ -320,8 +333,8 @@ export default function SolicitarPage() {
 
               <Button 
                 type="submit" 
-                className="w-full h-16 text-lg bg-white hover:bg-white/90 text-black font-bold rounded-2xl transition-all mt-8"
-                disabled={isSubmitting}
+                className="w-full h-16 text-lg bg-white hover:bg-white/90 text-black font-bold rounded-2xl transition-all mt-8 disabled:opacity-50"
+                disabled={isSubmitting || !isRucValid}
               >
                 {isSubmitting ? "Procesando Solicitud..." : "Enviar Solicitud Oficial"}
               </Button>
