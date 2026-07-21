@@ -22,6 +22,8 @@ interface Tramite {
   observacionesGenerales?: string;
   archivosObservados?: string;
   montoCobrado?: number;
+  estadoLicencia?: string;
+  fechaVencimientoLicencia?: string;
 }
 
 function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
@@ -303,13 +305,40 @@ function SeguimientoContent({ params }: { params: Promise<{ ruc: string }> }) {
 
       {tramite.estado === "APROBADO" && (
         <Card className="bg-[#030303] border-green-500/20 shadow-[0_0_40px_rgba(34,197,94,0.05)] rounded-3xl overflow-hidden">
-          <CardHeader className="bg-green-500/5 border-b border-green-500/10 p-8">
-            <CardTitle className="text-green-400 flex items-center gap-3 text-2xl tracking-tight">
-              <CheckCircle2 className="h-8 w-8" /> ¡Licencia Aprobada!
-            </CardTitle>
-            <CardDescription className="text-green-400/50 text-base mt-2">
-              Su trámite ha concluido exitosamente y su certificado oficial ha sido emitido.
-            </CardDescription>
+          <CardHeader className="bg-green-500/5 border-b border-green-500/10 p-8 flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div>
+              <CardTitle className="text-green-400 flex items-center gap-3 text-2xl tracking-tight">
+                <CheckCircle2 className="h-8 w-8" /> ¡Licencia Aprobada!
+              </CardTitle>
+              <CardDescription className="text-green-400/50 text-base mt-2">
+                Su trámite ha concluido exitosamente y su certificado oficial ha sido emitido.
+              </CardDescription>
+            </div>
+            
+            {tramite.estadoLicencia && tramite.fechaVencimientoLicencia && (
+              <div className="shrink-0 flex flex-col items-end gap-2">
+                <Badge 
+                  className={`px-4 py-1.5 text-sm font-semibold tracking-wider uppercase ${
+                    tramite.estadoLicencia === 'VIGENTE' 
+                      ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' 
+                      : tramite.estadoLicencia === 'VENCIDA'
+                      ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                      : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                  }`}
+                >
+                  {tramite.estadoLicencia}
+                </Badge>
+                <p className="text-xs text-white/40 font-mono">
+                  {tramite.estadoLicencia === 'VENCIDA' ? 'Venció el:' : 'Vence el:'} {
+                    // Parse as local to avoid timezone shifts since backend sends LocalDateTime (e.g. "2026-08-15T00:00:00")
+                    (() => {
+                      const [year, month, day] = tramite.fechaVencimientoLicencia.split('T')[0].split('-');
+                      return `${day}/${month}/${year}`;
+                    })()
+                  }
+                </p>
+              </div>
+            )}
           </CardHeader>
           <CardContent className="p-8">
             <Button 
