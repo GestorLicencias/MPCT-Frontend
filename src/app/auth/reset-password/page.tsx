@@ -21,6 +21,8 @@ function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [invalidToken, setInvalidToken] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     if (!token) {
@@ -52,19 +54,31 @@ function ResetPasswordForm() {
         router.push("/auth/login");
       }, 3000);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Error al restablecer la contraseña.");
+      const msg = error.response?.data?.error || "Error al restablecer la contraseña.";
+      if (msg.toLowerCase().includes("token") || msg.toLowerCase().includes("expirado") || msg.toLowerCase().includes("inválido")) {
+        setInvalidToken(true);
+        setErrorMessage(msg);
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (!token) {
+  if (!token || invalidToken) {
     return (
       <div className="text-center space-y-4 py-8">
-        <p className="text-white/50 text-sm">El enlace de recuperación es inválido o ha expirado.</p>
-        <Link href="/auth/forgot-password" className="text-cyan-500 hover:text-cyan-400 text-sm">
-          Solicitar un nuevo enlace
-        </Link>
+        <div className="mx-auto w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+          <Lock className="w-6 h-6 text-red-500" />
+        </div>
+        <h2 className="text-xl font-bold text-white">Enlace no válido</h2>
+        <p className="text-white/50 text-sm">{errorMessage || "El enlace de recuperación es inválido, ya fue usado o ha expirado."}</p>
+        <div className="pt-4">
+          <Link href="/auth/forgot-password" className="inline-block bg-white text-black font-semibold px-6 py-3 rounded-xl hover:bg-white/90 transition-colors text-sm">
+            Solicitar un nuevo enlace
+          </Link>
+        </div>
       </div>
     );
   }
