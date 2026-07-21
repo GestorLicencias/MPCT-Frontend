@@ -7,9 +7,9 @@ import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings, UserPlus, CreditCard, BarChart3, Key, LogOut, Eye, Building2, Loader2, Play } from "lucide-react";
+import { Settings, UserPlus, CreditCard, BarChart3, Key, LogOut, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { ValidarPagosAdmin } from "@/components/ValidarPagosAdmin";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { UsuariosAdminSection } from "@/components/UsuariosAdminSection";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -20,11 +20,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   
-  // Register Inspector State
-  const [registerEmail, setRegisterEmail] = useState("");
-  const [registerPassword, setRegisterPassword] = useState("");
-  const [registerRole, setRegisterRole] = useState("INSPECTOR");
-  const [isRegistering, setIsRegistering] = useState(false);
   const [activeTab, setActiveTab] = useState("config");
   useEffect(() => {
     fetchConfiguraciones();
@@ -54,21 +49,6 @@ export default function AdminPage() {
       toast.error(error.response?.data?.message || "Error al actualizar configuración.");
     } finally {
       setSaving(null);
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsRegistering(true);
-    try {
-      const res = await api.post("/admin/users", { email: registerEmail, password: registerPassword, role: registerRole });
-      toast.success(res.data.message || "Usuario registrado con éxito.");
-      setRegisterEmail("");
-      setRegisterPassword("");
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error al registrar el inspector.");
-    } finally {
-      setIsRegistering(false);
     }
   };
 
@@ -179,61 +159,9 @@ export default function AdminPage() {
           )}
 
           {activeTab === "usuarios" && (
-            <Card className="bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden">
-              <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
-                <CardTitle className="text-white text-2xl tracking-tight">Gestión de Usuarios</CardTitle>
-                <CardDescription className="text-white/50 text-base mt-2">Crea credenciales de acceso para nuevos inspectores o cajeros municipales.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-8">
-                <form onSubmit={handleRegister} className="space-y-6">
-                  <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Cargo / Rol</label>
-                    <div className="flex gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setRegisterRole("INSPECTOR")}
-                        className={`flex-1 h-14 rounded-xl border flex items-center justify-center font-medium transition-all ${registerRole === "INSPECTOR" ? "bg-white text-black border-white" : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white"}`}
-                      >
-                        Inspector
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRegisterRole("CAJERO")}
-                        className={`flex-1 h-14 rounded-xl border flex items-center justify-center font-medium transition-all ${registerRole === "CAJERO" ? "bg-white text-black border-white" : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10 hover:text-white"}`}
-                      >
-                        Cajero
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Correo Electrónico</label>
-                      <Input 
-                        type="email" 
-                        required 
-                        value={registerEmail} 
-                        onChange={(e) => setRegisterEmail(e.target.value)}
-                        className="h-14 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
-                        placeholder="ej. carlos@mpct.gob.pe"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-mono uppercase tracking-wider text-white/50 mb-3">Contraseña Segura</label>
-                      <Input 
-                        type="password" 
-                        required 
-                        value={registerPassword} 
-                        onChange={(e) => setRegisterPassword(e.target.value)}
-                        className="h-14 bg-white/5 border-white/10 text-white rounded-xl focus-visible:ring-1 focus-visible:ring-white/20"
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" disabled={isRegistering} className="h-14 px-8 bg-white text-black font-semibold hover:bg-white/90 rounded-xl w-full md:w-auto">
-                    {isRegistering ? "Registrando..." : "Crear Cuenta de Usuario"}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <div className="relative z-10">
+              <UsuariosAdminSection />
+            </div>
           )}
 
           {activeTab === "password" && (

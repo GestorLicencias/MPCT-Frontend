@@ -108,7 +108,6 @@ export default function CajaPage() {
         setMontoEntregadoEfectivo("");
         setReferenciaUnico("");
         setReferenciaHibrido("");
-      }
     } catch (error) {
       setTramite(null);
     } finally {
