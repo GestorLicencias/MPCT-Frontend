@@ -24,7 +24,10 @@ interface CajaEstado {
 }
 
 const abrirCajaSchema = z.object({
-  montoInicial: z.coerce.number().min(100, { message: "El fondo inicial debe ser al menos S/ 100.00" })
+  montoInicial: z.coerce.number()
+    .int({ message: "Debe ser un monto entero (sin céntimos)" })
+    .min(100, { message: "El fondo inicial debe ser de 3 dígitos (mín 100)" })
+    .max(999, { message: "El fondo inicial debe ser de 3 dígitos (máx 999)" })
 });
 
 const pagoSchema = z.object({
