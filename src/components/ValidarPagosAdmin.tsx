@@ -57,10 +57,16 @@ export function ValidarPagosAdmin() {
     setIsSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      // admin uses /admin/pagos/{id}/validar
-      const res = await axios.post(`${API_URL}/admin/pagos/${overridePagoId}/validar?aprobado=${overrideAprobado}&motivoOverride=${encodeURIComponent(motivoOverride)}`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // admin uses /admin/pagos/{id}/validar with body
+      const res = await axios.post(`${API_URL}/admin/pagos/${overridePagoId}/validar`, 
+        { 
+          aprobado: overrideAprobado, 
+          motivoOverride: motivoOverride 
+        }, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
       toast.success(res.data.message || (overrideAprobado ? "Pago forzado (Aprobado)" : "Pago forzado (Rechazado)"));
       setOverridePagoId(null);
       fetchPagos();
