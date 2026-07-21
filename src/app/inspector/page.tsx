@@ -21,14 +21,15 @@ export default function InspectorPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState<{url: string, title: string}[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [soloHoy, setSoloHoy] = useState(true);
 
   useEffect(() => {
     fetchPendientes();
-  }, []);
+  }, [soloHoy]);
 
   const fetchPendientes = async () => {
     try {
-      const resInsp = await api.get("/inspecciones/pendientes");
+      const resInsp = await api.get(`/inspecciones/pendientes?soloHoy=${soloHoy}`);
       
       const mappedInsp = resInsp.data.map((insp: any) => ({
         ...insp,
@@ -123,11 +124,28 @@ export default function InspectorPage() {
       </div>
 
       <Card className="bg-[#030303] border-white/10 shadow-2xl rounded-3xl relative z-10">
-        <CardHeader>
-          <CardTitle className="text-white text-xl tracking-tight">Inspecciones y Revisiones Pendientes</CardTitle>
-          <CardDescription className="text-white/50 text-sm">
-            Trámites de Licencia Nueva, Renovación y Modificación asignados o pendientes de revisión.
-          </CardDescription>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-white text-xl tracking-tight">Inspecciones y Revisiones Pendientes</CardTitle>
+            <CardDescription className="text-white/50 text-sm">
+              Trámites de Licencia Nueva, Renovación y Modificación asignados o pendientes de revisión.
+            </CardDescription>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-black border border-white/10 rounded-xl p-1">
+            <button 
+              onClick={() => setSoloHoy(true)} 
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${soloHoy ? 'bg-white text-black' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              Solo Hoy
+            </button>
+            <button 
+              onClick={() => setSoloHoy(false)} 
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${!soloHoy ? 'bg-white text-black' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
+            >
+              Todas
+            </button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="rounded-2xl border border-white/10 overflow-hidden bg-black/50">
