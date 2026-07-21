@@ -25,8 +25,7 @@ const formSchema = z.object({
   rubro: z.string().min(2, { message: "Seleccione el rubro." }),
   area: z.string().optional(),
   tipo: z.enum(["NUEVO", "RENOVACION", "MODIFICACION", "TRASLADO"]),
-  plano: z.any().optional(),
-  foto: z.any().optional()
+  plano: z.any().optional()
 }).superRefine((data, ctx) => {
   if (data.tipo !== "RENOVACION") {
     if (!data.area || data.area.length < 1) {
@@ -34,13 +33,6 @@ const formSchema = z.object({
     }
     if (!data.plano || data.plano.length !== 1) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar el plano en formato PDF o Imagen.", path: ["plano"] });
-    }
-    if (!data.foto || data.foto.length < 1 || data.foto.length > 4) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar entre 1 y 4 fotografías.", path: ["foto"] });
-    }
-  } else {
-    if (!data.foto || data.foto.length < 1) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Debe adjuntar al menos una foto actualizada de la fachada.", path: ["foto"] });
     }
   }
 });
@@ -74,11 +66,8 @@ export default function SolicitarPage() {
       formData.append("rubro", values.rubro);
       formData.append("area", values.area || "0");
       formData.append("tipo", values.tipo);
-      if (!isRenovacion) {
+      if (!isRenovacion && values.plano && values.plano[0]) {
         formData.append("plano", values.plano[0]);
-      }
-      for (let i = 0; i < values.foto.length; i++) {
-        formData.append("fotos", values.foto[i]);
       }
 
       const response = await axios.post(API_URL, formData, {
@@ -297,26 +286,6 @@ export default function SolicitarPage() {
                             }
                           }}
                           className={`border-white/10 text-white/70 h-auto py-3 file:text-black file:font-medium file:border-0 file:rounded-full file:px-4 file:py-2 file:mr-4 ${form.watch("tipo") === "RENOVACION" ? "bg-white/5 cursor-not-allowed opacity-50" : "bg-white/5 file:bg-white hover:file:bg-white/90 cursor-pointer"}`}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-400" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="foto"
-                  render={({ field: { value, onChange, ...field } }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-mono uppercase tracking-wider text-white/50">Fotografía de la Fachada (Máx. 4 imágenes)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="file" 
-                          accept="image/*"
-                          multiple
-                          onChange={(e) => onChange(e.target.files)}
-                          className="border-white/10 text-white/70 h-auto py-3 file:text-black file:font-medium file:border-0 file:rounded-full file:px-4 file:py-2 file:mr-4 bg-white/5 file:bg-white hover:file:bg-white/90 cursor-pointer"
                         />
                       </FormControl>
                       <FormMessage className="text-red-400" />
