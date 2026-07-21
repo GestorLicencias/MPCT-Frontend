@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -260,7 +261,8 @@ export default function CajaPage() {
 
   const handleLogout = () => {
     if (estadoCaja?.abierta) {
-      toast.error("No puedes cerrar sesión. Primero debes hacer el arqueo y cerrar la caja.");
+      toast.error("Debes hacer el arqueo y cerrar la caja antes de salir.");
+      router.push("/caja/cierre");
       return;
     }
     localStorage.removeItem("token");
@@ -471,6 +473,22 @@ export default function CajaPage() {
             <div className="space-y-6">
               <Card className={`bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden transition-opacity ${!estadoCaja?.abierta ? 'opacity-50 pointer-events-none' : ''}`}>
                 <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
+                  <CardTitle className="text-white text-xl tracking-tight flex items-center gap-2">
+                    Iniciar Trámite Rápido
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-8">
+                  <p className="text-sm text-white/50 mb-6">Abre el formulario público para registrar un nuevo trámite en nombre del ciudadano que está en ventanilla.</p>
+                  <Link href="/solicitar" target="_blank" rel="noopener noreferrer" className="block w-full">
+                    <Button variant="outline" className="w-full h-14 border-white/10 text-white hover:bg-white/5 hover:text-white rounded-xl">
+                      Ir a Formulario de Solicitud <ExternalLink className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card className={`bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden transition-opacity ${!estadoCaja?.abierta ? 'opacity-50 pointer-events-none' : ''}`}>
+                <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
                   <CardTitle className="text-white text-2xl tracking-tight flex items-center gap-2">
                     <Receipt className="text-white w-6 h-6" /> Registrar Venta (Cobro Presencial)
                   </CardTitle>
@@ -616,20 +634,6 @@ export default function CajaPage() {
                       </Button>
                     </form>
                   </Form>
-                </CardContent>
-              </Card>
-
-              <Card className={`bg-[#080808] border-white/5 shadow-xl rounded-3xl relative z-10 overflow-hidden transition-opacity ${!estadoCaja?.abierta ? 'opacity-50 pointer-events-none' : ''}`}>
-                <CardHeader className="p-8 bg-[#0a0a0a] border-b border-white/5">
-                  <CardTitle className="text-white text-xl tracking-tight flex items-center gap-2">
-                    Iniciar Trámite Rápido
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-8">
-                  <p className="text-sm text-white/50 mb-6">Abre el formulario público para registrar un nuevo trámite en nombre del ciudadano que está en ventanilla.</p>
-                  <Button onClick={() => window.open('/solicitar', '_blank')} variant="outline" className="w-full h-14 border-white/10 text-white hover:bg-white/5 hover:text-white rounded-xl">
-                    Ir a Formulario de Solicitud <ExternalLink className="ml-2 h-4 w-4" />
-                  </Button>
                 </CardContent>
               </Card>
             </div>
