@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Image as ImageIcon, CheckCircle, XCircle, LogOut, ChevronLeft, ChevronRight, Eye } from "lucide-react";
+import { FileText, Image as ImageIcon, CheckCircle, XCircle, LogOut, ChevronLeft, ChevronRight, Eye, Bell } from "lucide-react";
 
 export default function InspectorPage() {
   const router = useRouter();
@@ -118,9 +118,19 @@ export default function InspectorPage() {
 
       <div className="flex justify-between items-center bg-[#030303] border border-white/10 p-6 rounded-3xl shadow-2xl relative z-10">
         <h2 className="text-2xl font-bold text-white tracking-tight">Bandeja de Inspector</h2>
-        <Button variant="outline" onClick={handleLogout} className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl">
-          <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl relative">
+            <Bell className="h-4 w-4" />
+            {inspecciones.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {inspecciones.length}
+              </span>
+            )}
+          </Button>
+          <Button variant="outline" onClick={handleLogout} className="text-white/70 border-white/10 hover:bg-white/10 hover:text-white rounded-xl">
+            <LogOut className="mr-2 h-4 w-4" /> Cerrar Sesión
+          </Button>
+        </div>
       </div>
 
       <Card className="bg-[#030303] border-white/10 shadow-2xl rounded-3xl relative z-10">
@@ -242,7 +252,7 @@ export default function InspectorPage() {
                 
                 <div className="pt-4 border-t border-white/10 space-y-4 md:col-span-2">
                   <h4 className="text-xs font-mono uppercase tracking-wider text-white/50">Documentos Técnicos</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <Button variant="outline" className="w-full justify-start bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl" onClick={async () => {
                       try {
                         const res = await api.get(`/tramites/${selected.tramiteObj.ruc}/archivos/plano`, { responseType: 'blob' });
@@ -265,9 +275,6 @@ export default function InspectorPage() {
                     }}>
                       <FileText className="mr-2 h-4 w-4 text-white/70" /> Plano
                     </Button>
-                    <Button variant="outline" className="w-full justify-start bg-white/5 border-white/10 hover:bg-white/10 text-white rounded-xl" onClick={() => openLightbox(0)}>
-                      <ImageIcon className="mr-2 h-4 w-4 text-white/70" /> Imágenes
-                    </Button>
                   </div>
                 </div>
                 
@@ -276,8 +283,8 @@ export default function InspectorPage() {
                   
                   <div className="bg-white/5 border border-white/10 p-4 rounded-2xl space-y-3">
                     <p className="text-sm text-white/50 mb-2">Seleccione los documentos incorrectos (Obligatorio al Observar):</p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {['PLANO', 'FOTO1', 'FOTO2', 'FOTO3', 'FOTO4'].map((doc) => (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {['PLANO'].map((doc) => (
                         <label key={doc} className="flex items-center space-x-2 cursor-pointer group">
                           <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${archivosObservados.includes(doc) ? 'bg-white border-white' : 'border-white/20 bg-black group-hover:border-white/50'}`}>
                             {archivosObservados.includes(doc) && <CheckCircle className="w-3.5 h-3.5 text-black" />}
