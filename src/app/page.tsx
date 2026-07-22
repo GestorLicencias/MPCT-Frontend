@@ -100,7 +100,7 @@ export default function Home() {
             <div className="mb-12 w-full">
               <h1 className="text-center text-5xl sm:text-6xl md:text-8xl lg:text-[110px] xl:text-[130px] font-light leading-[1.0] tracking-tight text-white">
                 <span className="block whitespace-nowrap">Municipalidad</span>
-                <span className="block whitespace-nowrap">Provincial Coimera</span>
+                <span className="block whitespace-nowrap">Provincial</span>
                 <span className="block whitespace-nowrap">
                   de <span className="relative inline-block font-normal">
                     {['T', 'r', 'u', 'x'].map((letter, i) => (
