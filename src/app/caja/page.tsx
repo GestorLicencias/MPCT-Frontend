@@ -56,6 +56,7 @@ export default function CajaPage() {
   const [activeTab, setActiveTab] = useState<"estado" | "cobro" | "validar" | "alertas">("estado");
   const [mostrarFormAbrir, setMostrarFormAbrir] = useState(false);
   const [modalSolicitudAbierto, setModalSolicitudAbierto] = useState(false);
+  const [procesandoPago, setProcesandoPago] = useState(false);
 
   const [tramite, setTramite] = useState<any>(null);
   const [buscando, setBuscando] = useState(false);
@@ -268,6 +269,7 @@ export default function CajaPage() {
     }
 
     try {
+      setProcesandoPago(true);
       await api.post("/caja/pago-presencial", {
         ruc: values.ruc,
         detalles: payloadDetalles
@@ -281,7 +283,9 @@ export default function CajaPage() {
       setReferenciaHibrido("");
       fetchEstadoCaja();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Error al registrar el pago");
+      toast.error(error.response?.data?.message || "Error al procesar el pago");
+    } finally {
+      setProcesandoPago(false);
     }
   };
 
@@ -721,10 +725,17 @@ export default function CajaPage() {
 
                       <Button 
                         type="submit" 
-                        disabled={!tramite || tramite.estado !== 'PENDIENTE_PAGO'}
+                        disabled={!tramite || tramite.estado !== 'PENDIENTE_PAGO' || procesandoPago}
                         className="w-full h-14 bg-white hover:bg-white/90 disabled:bg-white/20 text-black disabled:text-white/40 font-bold text-lg rounded-xl transition-all shadow-[0_0_15px_rgba(255,255,255,0.3)] mt-6"
                       >
-                        Confirmar Venta y Procesar
+                        {procesandoPago ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            Procesando...
+                          </div>
+                        ) : (
+                          "Confirmar Venta y Procesar"
+                        )}
                       </Button>
                     </form>
                   </Form>
